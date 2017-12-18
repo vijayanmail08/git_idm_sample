@@ -1,0 +1,1867 @@
+<?php
+define('CONTRACTOR', 'contractor');
+define('FUNCTIONAL', 'functional');
+define('RENEWAL_LISTING_PERIOD', '30 DAYS');
+/**
+ * Implementation of hook_menu().
+ */
+function idm_notifications_menu() {
+  $items = array ();
+
+  $items['notifications'] = array (
+    'title' => 'Notifications',
+    'page callback' => 'list_notifications',
+    'access arguments' => array('access idm profile'),
+    'menu_name' => 'main-menu', // This is the changed line.
+    'type' => MENU_NORMAL_ITEM,
+    'weight' => - 47
+  );
+  $items['approve-reject-request/%'] = array (
+    'title' => 'Request Details',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('idm_notification_approve_reject_request_form', 1),
+    'access arguments' => array('access idm profile'),
+  );
+
+  $items['approval-create-group/%'] = array (
+    'title' => 'Request Details',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('idm_notification_approval_create_group_form', 1),
+    'access arguments' => array('access idm profile'),
+  );
+
+  $items['approval-join-group/%'] = array (
+    'title' => 'Request Details',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('idm_notification_approval_join_group_form', 1),
+    'access arguments' => array('access idm profile'),
+  );
+
+  $items['approval-create-user/%'] = array (
+    'title' => 'Request Details',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('idm_notification_approval_create_user_form', 1),
+    'access arguments' => array('access idm profile'),
+  );
+
+  $items['approval-new-certificate/%'] = array (
+    'title' => 'Request Details',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('idm_notification_approval_new_certificate_form', 1),
+    'access arguments' => array('access idm profile'),
+  );
+
+  $items['approval-new-rsa/%/%/%'] = array (
+    'title' => 'Request Details',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('idm_notification_approval_new_rsa_form', 1, 2, 3),
+    'access arguments' => array('access idm profile'),
+  );
+
+  $items['approval-new-pomd/%/%/%'] = array (
+    'title' => 'Request Details',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('idm_notification_approval_new_pomd_form', 1, 2, 3),
+    'access arguments' => array('access idm profile'),
+  );
+
+  $items['approval-new-tilde/%/%/%'] = array (
+    'title' => 'Request Details',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('idm_notification_approval_new_tilde_form', 1, 2, 3),
+    'access arguments' => array('access idm profile'),
+  );
+
+  $items['approve-request/%/%'] = array (
+    'title' => 'Approve Request',
+    'page callback' => 'idm_notification_approve_request',
+    'page arguments' => array (1, 2, 3),
+    'access arguments' => array('access idm profile')
+  );
+  $items['approve-request-all/%/%'] = array (
+    'title' => 'Approve Request All',
+    'page callback' => 'idm_notification_approve_request_all',
+    'page arguments' => array (1, 2),
+    'access arguments' => array('access idm profile')
+  );
+  $items['renew-view-all'] = array (
+    'page callback' => 'idm_notification_renew_view_all',
+    'access arguments' => array('access idm profile')
+  );
+  $items['approve-view-all'] = array (
+    'page callback' => 'idm_notification_approve_view_all',
+    'access arguments' => array('access idm profile')
+  );
+  $items['submitted-view-all'] = array (
+    'page callback' => 'idm_notification_submitted_view_all',
+    'access arguments' => array('access idm profile')
+  );
+  $items['expiringgroups-view-all'] = array (
+    'page callback' => 'idm_notification_expiringgroups_view_all',
+    'access arguments' => array('access idm profile')
+  );
+  $items['submitted_task/%'] = array (
+    'page callback' => 'idm_notification_submitted_single',
+    'page arguments' => array (1),
+    'access arguments' => array('access idm profile')
+  );
+  $items['ajax/approvalrequests/%'] = array(
+    'page callback'=> '_idm_notifications_get_approve',
+    'page arguments' => array(2),
+    'access arguments' => array('access idm profile'),
+  );
+
+  return $items;
+}
+
+/**
+ * Callback for Notifications
+ */
+function list_notifications() {
+  /*$content['info'] = array (
+    '#type' => 'markup',
+    '#markup' => '<div class="clearfix"></div>',
+  );*/
+  $block = module_invoke('idm_notifications', 'block_view', 'renew');
+  $block1 = module_invoke('idm_notifications', 'block_view', 'approve');
+  $block2 = module_invoke('idm_notifications', 'block_view', 'tasks');
+  $block3 = module_invoke('idm_notifications', 'block_view', 'expiringgroups');
+  $output = render($block['content']);
+  $output1 = render($block1['content']);
+  $output2 = render($block2['content']);
+  $output3 = render($block3['content']);
+  $block_content = (!empty($output)) ? '<div id="block-idm-notifications-renew">'.$output.'</div>' : '' ;
+  $block1_content = (!empty($output1)) ? '<div id="block-idm-notifications-approve">'.$output1.'</div>' : '' ;
+  $block2_content = (!empty($output2)) ? '<div id="block-idm-notifications-tasks">'.$output2.'</div>' : '' ;
+  $block3_content = (!empty($output3)) ? '<div id="block-idm-notifications-expiringgroups">'.$output3.'</div>' : '' ;
+
+  if(empty($output) && empty($output1)) {
+      $notifications_content = '<div id="idm_notification_empty_msg">You have no notifications.</div><div class="clearfix"></div>';
+  }
+  else {
+	  $notifications_content = $block_content.$block1_content;
+  }
+    $content['info'] = array (
+      '#type' => 'markup',
+      '#markup' => $notifications_content.$block3_content.$block2_content.'<div class="clearfix"></div>',
+    );
+  return $content;
+}
+
+
+/**
+ * Implementing hook_block_info().
+ */
+function idm_notifications_block_info() {
+  $blocks['notices'] = array (
+    'info' => t('Notifications Notices'),
+    'cache' => DRUPAL_NO_CACHE
+  );
+  $blocks['renew'] = array (
+    'info' => t('Renew Contractors'),
+    'cache' => DRUPAL_NO_CACHE
+  );
+  $blocks['approve'] = array (
+    'info' => t('Approve Requests'),
+    'cache' => DRUPAL_NO_CACHE
+  );
+  $blocks['tasks'] = array (
+    'info' => t('Submitted Tasks'),
+    'cache' => DRUPAL_NO_CACHE
+  );
+   $blocks['expiringgroups'] = array (
+    'info' => t('Expiring Groups'),
+    'cache' => DRUPAL_NO_CACHE
+  );
+  return $blocks;
+}
+
+/**
+ * Implementing hook_block_view().
+ *
+ * @param String $delta
+ */
+function idm_notifications_block_view($delta) {
+  $block = array ();
+  switch ($delta) {
+    case 'notices' :
+      $block['title'] = 'Notifications';
+      $block['content'] = _idm_notifications_get_notices();
+      $block['subject'] = '';
+      break;
+    case 'renew' :
+      $block['content'] = _idm_notifications_get_renews();
+      $block['subject'] = '';
+      break;
+    case 'approve' :
+      if(!isset($_SESSION['legacy'])) {
+        $block['content'] = _idm_notifications_get_approve();
+        $block['subject'] = '';
+      }
+      break;
+    case 'tasks' :
+      $block['content'] = _idm_notifications_get_submitted_tasks();
+      $block['subject'] = '';
+      break;
+    /*case 'expiringgroups' :
+      if(!isset($_SESSION['legacy'])) {
+        $block['content'] = _idm_notifications_get_expiringgroups();
+        $block['subject'] = '';
+      }
+      break;*/
+  }
+  return $block;
+}
+
+/**
+ * Implementing hook_theme().
+ */
+function idm_notifications_theme() {
+  $themes = array (
+    'notifications_notice' => array (
+      'template' => 'notifications_notice',
+      'variables' => array (
+        'vars' => array (
+          ''
+        )
+      )
+    ),
+    'notifications_renew' => array (
+      'template' => 'notifications_renew',
+      'variables' => array (
+        'vars' => array (
+          ''
+        )
+      )
+    ),
+    'notifications_approve' => array (
+      'template' => 'notifications_approve',
+      'variables' => array (
+        'vars' => array (
+          ''
+        )
+      )
+    ),
+    'notifications_submitted_tasks' => array (
+      'template' => 'notifications_submitted_tasks',
+      'variables' => array (
+        'vars' => array (
+          ''
+        )
+      )
+    ),
+    'contractor_details' => array (
+      'template' => 'contractor_details',
+      'variables' => array (
+        'vars' => array (
+          ''
+        )
+      )
+    ),
+    'submitted_task_details' => array (
+      'template' => 'submitted_task_details',
+      'variables' => array (
+        'vars' => array (
+          ''
+        )
+      )
+    ),
+    'notifications_expiringgroups' => array (
+      'template' => 'notifications_expiringgroups',
+      'variables' => array (
+        'vars' => array (
+          ''
+        )
+      )
+    ),
+  );
+  return $themes;
+}
+
+/**
+ * Callback for getting notifications.
+ */
+function _idm_notifications_get_notices() {
+  $args = arg();
+  $var = array();
+  if ($args[0] == 'homepage') {
+    $var['homepage'] = true;
+    $notice_content = array(
+      "1" =>  array(
+        "main_class" => "notice",
+        "icon_class" => "icons-ok",
+        "message" => "New Contractor account for Ellen Martinez, SSO 2064400000 has been created.",
+        "button_class" => "no-action",
+        "button_value" => ""
+      ),
+      "2" =>  array(
+        "main_class" => "alert",
+        "icon_class" => "icons-alert",
+        "message" => "Reset your password.",
+        "error" => "Your password will expire in 12 days.",
+        "button_class" => "has-action",
+        "button_value" => "Reset"
+      )
+    );
+  } else {
+    $notice_content = array(
+     /* IP-418 */
+   /* "1" =>  array(
+        "main_class" => "notice",
+        "icon_class" => "icons-ok",
+        "message" => "New Contractor account for Ellen Martinez, SSO 2064400000 has been created.",
+        "button_class" => "no-action",
+        "button_value" => ""
+      ),
+      "2" =>  array(
+        "main_class" => "alert",
+        "icon_class" => "icons-alert",
+        "message" => "Reset your password.",
+        "error" => "Your password will expire in 12 days.",
+        "button_class" => "has-action",
+        "button_value" => "Reset"
+      ),*/
+      "3" =>  array(
+        "main_class" => "reminder",
+        "icon_class" => "icons-reminder",
+        "message" => "Tell us your work address.",
+        "button_class" => "has-action",
+        "button_value" => "Add"
+      ),
+      "4" =>  array(
+        "main_class" => "notice",
+        "icon_class" => "icons-ok",
+        "message" => 'New "Technology" group created.',
+        "button_class" => "no-action",
+        "button_value" => ""
+      ),
+      "5" =>  array(
+        "main_class" => "notice",
+        "icon_class" => "icons-ok",
+        "message" => 'Active directory access granted.',
+        "button_class" => "no-action",
+        "button_value" => ""
+      ),
+      "6" =>  array(
+        "main_class" => "reminder",
+        "icon_class" => "icons-reminder",
+        "message" => 'Upload your profile image for us in all NBCU systems.',
+        "button_class" => "has-action",
+        "button_value" => "Upload"
+      ),
+      "7" =>  array(
+        "main_class" => "reminder",
+        "icon_class" => "icons-reminder",
+        "message" => 'Tells us your personal email so your colleagues can chat with you.',
+        "button_class" => "has-action",
+        "button_value" => "Add"
+      ),
+      "8" =>  array(
+        "main_class" => "notice",
+        "icon_class" => "icons-ok",
+        "message" => 'New Contractor account for Quention Alonzo, SSO 2064400001 has been created.',
+        "button_class" => "no-action",
+        "button_value" => ""
+      ),
+      "9" =>  array(
+        "main_class" => "alert",
+        "icon_class" => "icons-alert",
+        "message" => 'Failed to add "All Users" workstation.',
+        "button_class" => "no-action",
+        "button_value" => ""
+      ),
+      "10" =>  array(
+        "main_class" => "notice",
+        "icon_class" => "icons-ok",
+        "message" => 'Shared printer "UX Team 10th Fl" succesfully added.',
+        "button_class" => "no-action",
+        "button_value" => ""
+      )
+    );
+  }
+  $var['notices'] = $notice_content;
+  return theme('notifications_notice', $var);
+}
+
+/**
+ * Callback for getting renewals.
+ */
+function _idm_notifications_get_renews() {
+  ctools_include('object-cache');
+ // idm_notifications_flush_caches();
+  global $user;
+  $var = array('renews' => array(), 'renews_count' => 0);
+
+  //$userid = ($user->uid) != 1 ? $user->name : '221013362';
+  //$userid = '221013362';
+  $userid = empty($user->name) ? '' : $user->name;
+  $renew_content = array();
+  $allowed_roles = array('employee', 'contractor');
+  $roles = $user->roles;
+  $roles = array_map('strtolower', $roles);
+  $roles_present = array_intersect($roles, $allowed_roles);
+  if (empty($roles_present) && $user->uid != 1) return false;
+
+  $api_url = variable_get('rest_api_check_url');
+  //Applying the sort filter required for 'my staff' so that this data can be reused there
+  $sort_filter = '&sortBy=id&sortOrder=ascending';
+  $service_url =  $api_url . '/internal/users?filter='.urlencode('manager.managerId eq '.$userid.' and userType eq '.CONTRACTOR).$sort_filter;
+  $data = ctools_object_cache_get('api', 'renew_request');
+  if(empty($data)){
+    $result = _idm_portal_get_api_data($service_url);
+    if(!empty($result->data)){
+      $data = $result->data;
+      ctools_object_cache_set('api', 'renew_request', $data);
+    }
+  }
+  $sso_all = '';
+  $exp_date_all = '';
+  if(!empty($data)){
+    $contractor_data = json_decode($data);
+    foreach($contractor_data->Resources AS $contractor){
+      if(isset($contractor->custom_enddate)) {
+        if(is_array($contractor->custom_enddate)) {
+          foreach($contractor->custom_enddate as $val) {
+            $contractor->custom_enddate = $val->value;
+          }
+        }
+        if(strtotime($contractor->custom_enddate) < idm_portal_strtotime('+'.RENEWAL_LISTING_PERIOD)){
+          $renew_content[] = array(
+            "emp_sso_id" => $contractor->id,
+            "emp_name" => idm_profile_format_display_name($contractor,false),
+            "emp_title" => isset($contractor->custom_jobTitle) ? $contractor->custom_jobTitle : "None",
+            "emp_date" => date('m/d/Y',strtotime($contractor->custom_enddate)),
+            "error_class" => "error",
+            "emp_button" => "Renew"
+          );
+          $sso_all .= $contractor->id.',';
+          $exp_date_all .= date('m/d/Y',strtotime($contractor->custom_enddate)).',';
+        }
+      }
+    }
+    $sso_all = rtrim($sso_all,',');
+    $exp_date_all = rtrim($exp_date_all,',');
+    $var['renews_count'] = count($renew_content);
+    $var['renews'] = $renew_content;
+    $var['renews_sso_all'] = $sso_all;
+    $var['exp_date_all'] = $exp_date_all;
+    //Adding this check here also since this function is being used for generating block content too
+    $count_renewal = ctools_object_cache_get('api', 'renew_count');
+    if($count_renewal === NULL){
+      ctools_object_cache_set('api', 'renew_count', $var['renews_count']);
+    }
+  }
+  return theme('notifications_renew', $var);
+}
+
+/**
+ * Callback for getting approvals.
+ */
+function _idm_notifications_get_approve($json = FALSE) {
+  ctools_include('object-cache');
+  $count_approval = ctools_object_cache_get('api', 'approve_count');
+  if(!$json && ($count_approval == NULL)){
+    return '<div class="ajax_throbber"><img src="/sites/all/themes/idmtheme/images/ajax-loader.gif" /></div>';
+  }
+
+  global $user;
+  $var = array('approve' => array(), 'approve_count' => 0);
+  $approve_content = array();
+  $userid = empty($user->name) ? '' : $user->name;
+  $allowed_roles = array('employee', 'contractor');
+  $roles = $user->roles;
+  $roles = array_map('strtolower', $roles);
+  $roles_present = array_intersect($roles, $allowed_roles);
+  if (empty($roles_present)) return $json ? drupal_json_output() : false;
+
+  $api_url = variable_get('rest_api_check_url');
+  $service_url =  $api_url . '/workflow/approvals?requestor='.$userid.'&filterString='.rawurlencode('owner eq '.$userid);
+  $data = ctools_object_cache_get('api', 'approve_request');
+  if (empty($data) || isset($_SESSION['approve_action'])) {
+   // cache_clear_all('*', 'cache', TRUE);
+    $result = _idm_portal_get_api_data($service_url);
+    if(!empty($result->data)){
+      $data = $result->data;
+      ctools_object_cache_set('api', 'approve_request', $data);
+    }
+  }
+  $custom_all = '';
+  if(!empty($data)){
+    $approve_data = json_decode($data);
+    //echo '<pre>';
+    //print_r($approve_data->results['1']);
+    if (!empty($approve_data->results['1']->custom_ViewMyWorkListWorkListTab->custom_WorkList->custom_currentvalue)) {
+      foreach($approve_data->results['1']->custom_ViewMyWorkListWorkListTab->custom_WorkList->custom_currentvalue AS $approve){
+        //list($sso, ) = explode(",", $approve->custom_Initiator);
+	$posofsso = strpos($approve->custom_Initiator,"(");
+	$req_sso = rtrim(substr($approve->custom_Initiator, $posofsso+1),")");
+	$req_sso = substr($req_sso, -9, 9);
+	$posofname = strpos($approve->custom_Initiator,"(");
+	$req_name = substr($approve->custom_Initiator, 0, $posofname);
+
+          $approve_content[] = array(
+            "emp_name" => $approve->custom_Name,
+            "request" => str_replace('"', "", $approve->Title),
+            //"requestor" => substr($sso, strpos($sso, "=") + 1),
+	    "requestor_sso" => $req_sso,
+	    "requestor" => l($req_name, 'profile/'.$req_sso),
+            "date" => date('m/d/Y',strtotime($approve->custom_InitiationDate)),
+            "custom_id" => $approve->custom_Id,
+            "approver" => $userid
+          );
+          $custom_all .= $approve->custom_Id.')';
+      }
+    }
+  }
+  unset($_SESSION['approve_action']);
+  $custom_all = rtrim($custom_all,')');
+  $var['approve_custom_all'] = $custom_all;
+  $var['approve_count'] = count($approve_content) ;
+  $var['approve'] = $approve_content;
+  $var['notifications_approve_url'] = variable_get('notifications_approve_url','http://iam.inbcu.com/idm/user/request/PendingItems/myApprovals.jsp');
+  //Adding this check here also since this function is being used for generating block content too
+  if($count_approval === NULL){
+    ctools_object_cache_set('api', 'approve_count', $var['approve_count']);
+  }
+  $output = theme('notifications_approve', $var);
+  return $json ? drupal_json_output($output) : $output;
+}
+
+/**
+ * Callback for getting submitted tasks.
+ */
+function _idm_notifications_get_submitted_tasks() {
+  ctools_include('object-cache');
+  global $user;
+  $var = array('submitted' => array(), 'submitted_count' => 0);
+  $submitted_content = array();
+  $userid = empty($user->name) ? '' : $user->name;
+  $allowed_roles = array('employee', 'contractor');
+  $roles = $user->roles;
+  $roles = array_map('strtolower', $roles);
+  $roles_present = array_intersect($roles, $allowed_roles);
+  if (empty($roles_present)) return false;
+
+  $api_url = variable_get('rest_api_check_url');
+  $service_url =  $api_url . '/workflow/request/submittedtasks?requestor='.$userid;
+  $data = ctools_object_cache_get('api', 'submitted_taks');
+  if (empty($data)) {
+    //cache_clear_all('*', 'cache', TRUE);
+    $result = _idm_portal_get_api_data($service_url);
+    if(!empty($result->data)){
+      $data = $result->data;
+      ctools_object_cache_set('api', 'submitted_taks', $data);
+    }
+  }
+  if(!empty($data)){
+    $submitted_data = json_decode($data);
+    if(!empty($submitted_data->results['1']->custom_ViewMySubmittedTasksSubmittedTasksTab->custom_TaskList->custom_currentvalue)) {
+      foreach($submitted_data->results['1']->custom_ViewMySubmittedTasksSubmittedTasksTab->custom_TaskList->custom_currentvalue AS $submitted){
+        if(!empty($submitted)){
+          $submitted_content[] = array(
+            "task" => !empty($submitted->custom_TaskName) ?  $submitted->custom_TaskName : '',
+            "submitted_by" => !empty($submitted->custom_SubmittedBy) ? $submitted->custom_SubmittedBy : '',
+            "date" => !empty($submitted->custom_Submitted) ? date('m/d/Y',strtotime($submitted->custom_Submitted)) : '',
+            "updated_date" => !empty($submitted->custom_LastUpdated) ? date('m/d/Y',strtotime($submitted->custom_LastUpdated)) : '',
+            "status" => !empty($submitted->custom_Status) ? $submitted->custom_Status : '',
+            "id" => !empty($submitted->Id) ? $submitted->Id : ''
+          );
+        }
+      }
+    }
+  }
+  $submitted_count = count($submitted_content);
+  $var['submitted_count'] = !empty($submitted_count) ? $submitted_count : 0 ;
+  $var['submitted'] = $submitted_content;
+  $var['notifications_request_url'] = variable_get('notifications_request_url','http://iam.inbcu.com/idm/user/request/PendingItems/myRequests.jsp');
+  return theme('notifications_submitted_tasks', $var);
+}
+
+/**
+ * Implementation of hook_flush_caches
+ */
+function idm_notifications_flush_caches(){
+  return array('ctools_object_cache');
+}
+
+function idm_notification_approve_reject_request_form($form, &$form_state, $workitemId) {
+  global $user;
+  $requestor = empty($user->name) ? '' : $user->name;
+  $url = variable_get('rest_api_check_url', 'http://3.3.175.127:8080/idm-api/rest');
+  $url .= '/workflow/approvals/'.rawurlencode($workitemId).'?requestor='.urlencode($requestor);
+  //http://3.3.175.127:8080/idm-api/rest/workflow/approvals/1%204%203146:WPDS?requestor=206426150
+  $request_json = '';
+  $method = 'GET';
+  $result_output = idm_profile_execute_curl($url, '', $method);
+  $result_json_output = json_decode($result_output);
+  $custom_comments = $result_json_output->entitlements->custom_comments;
+	if(!empty($result_json_output->entitlements->custom_model)) {
+	  $contractor_details = array (
+	    "Certificate Type" => empty($result_json_output->entitlements->custom_certificatetype) ? '' : $result_json_output->entitlements->custom_certificatetype,
+	    "Certificate Usage" => empty($result_json_output->entitlements->custom_certificateusage) ? '' : $result_json_output->entitlements->custom_certificateusage,
+	    "Asset Class" => empty($result_json_output->entitlements->custom_assetclass) ? '' : $result_json_output->entitlements->custom_assetclass,
+	    "Asset Type" => empty($result_json_output->entitlements->custom_assettype) ? '' : $result_json_output->entitlements->custom_assettype,
+	    "Make" => empty($result_json_output->entitlements->custom_make) ? '' : $result_json_output->entitlements->custom_make,
+	    "Model" => empty($result_json_output->entitlements->custom_model) ? '' : $result_json_output->entitlements->custom_model,
+	    "Asset Ownership" => empty($result_json_output->entitlements->custom_assetownership) ? '' : $result_json_output->entitlements->custom_assetownership,
+		);
+	}
+	else {
+	$givenName = empty($result_json_output->name->givenName) ? '' : $result_json_output->name->givenName;
+	$familyName = empty($result_json_output->name->familyName) ? '' : $result_json_output->name->familyName;
+	  $contractor_details = array (
+	    "Name" => $givenName.' '.$familyName,
+	    "SSO" => empty($result_json_output->custom_userId) ? '' : $result_json_output->custom_userId,
+	    "Email" => empty($result_json_output->custom_supplierEmail) ? '' : $result_json_output->custom_supplierEmail,
+	    "Manager" => empty($result_json_output->manager->managerId) ? '' : $result_json_output->manager->managerId,
+	    "Start Date" => empty($result_json_output->custom_startdate) ? '' : $result_json_output->custom_startdate,
+	    "End Date" => empty($result_json_output->custom_enddate) ? '' : $result_json_output->custom_enddate,
+	    "Job title" => empty($result_json_output->custom_jobTitle) ? '' : $result_json_output->custom_jobTitle,
+	    "Phone" =>empty($result_json_output->phoneNumbers['0']->value) ? '' : $result_json_output->phoneNumbers['0']->value,
+		);
+	}
+	$var['contractor_details'] = $contractor_details;
+
+  $form['outerdivstart'] = array(
+      '#title' => t('Name'),
+      '#type' => 'markup',
+      '#prefix' => '<div id="contractor_details-info">'
+      );
+
+  $form['name'] = array(
+      '#title' => t('Name'),
+      '#type' => 'markup',
+      '#markup' => theme('contractor_details', $var),
+  );
+  $form['namedivstart'] = array(
+      '#title' => t('Name'),
+      '#type' => 'markup',
+      '#prefix' => '<div class="assets-certificate-info"><div class="assets-certificate-wrapper">'
+      );
+
+  $form['comments'] = array(
+      '#title' => t('Comments'),
+      '#type' => 'textarea',
+      '#value' => $custom_comments,
+      '#required' => FALSE,
+	    '#resizable' => FALSE,
+      '#prefix' => '<div class="field-row comments-approve-reject"><span title="This field is required." class="form-required">&nbsp&nbsp</span>',
+      '#suffix' => '</div>',
+	  '#attributes' => array (
+		  'class' => array (
+			'plain-text-area'
+		  )
+		),
+  );
+  $form['workitemid'] = array(
+      '#type' => 'hidden',
+      '#value' => $workitemId,
+      '#prefix' => '<div class="workitemid-approve-reject">',
+      '#suffix' => '</div>'
+  );
+  $form['submit'] = array (
+    '#type' => 'submit',
+    '#value' => t('Submit'),
+    '#attributes' => array('class' => array('submit-button small_button hover-blue')),
+	  '#prefix' => '<div class="submit-buttons-row submit-approve-reject" >',
+  );
+  $form['reject'] = array (
+    '#type' => 'button',
+    '#value' => t('Reject'),
+    '#attributes' => array('class' => array('reject-button small_button hover-grey')),
+  );
+  $form['cancel'] = array (
+    '#type' => 'button',
+    '#value' => t('Cancel'),
+    '#attributes' => array('class' => array('cancel-button small_button hover-grey')),
+    '#suffix' => '</div>',
+  );
+  $form['namedivend'] = array(
+      '#title' => t('Name'),
+      '#type' => 'markup',
+      '#suffix' => '</div>'
+      );
+
+  $form['outerdivend'] = array(
+      '#title' => t('Name'),
+      '#type' => 'markup',
+      '#suffix' => '</div></div>'
+      );
+  return $form;
+}
+
+function idm_notification_approve_reject_request_form_validate($form, &$form_state) {
+	$workitemid = $form_state['values']['workitemid'];
+	if($form_state['values']['op'] == 'Submit'){
+		idm_notification_approve_request_process($workitemid, 'approve', '');
+	} else if($form_state['values']['op'] == 'Reject'){
+		idm_notification_approve_request_process($workitemid, 'reject', '');
+	} else if($form_state['values']['op'] == 'Cancel'){
+		drupal_goto();
+	}
+}
+
+function idm_notification_approval_create_group_form($form, &$form_state, $workitemId) {
+  $result_json_output = idm_notification_approval_variable_initiation($workitemId);
+  //echo '<pre>';
+  //print_r($result_json_output);
+  ctools_object_cache_clear('api', 'profile_data'.trim($result_json_output->custom_userId));
+  $req_for_info = _idm_profile_get_user(trim($result_json_output->custom_userId));
+  $req_for_info['displayname'] = empty($req_for_info['displayname']) ? '' : $req_for_info['displayname'];
+  $req_title = 'Approval - Create group "'.$result_json_output->displayname.'" for '.$req_for_info['displayname'].' '.'('.$result_json_output->custom_userId.')';
+  $custom_comments = !empty($result_json_output->entitlements->custom_comments) ? $result_json_output->entitlements->custom_comments : '' ;
+
+  if (!empty($result_json_output->securitygroup)) {
+    if ($result_json_output->securitygroup == 'FALSE') {
+      $securityGrp = 'No';
+    } else {
+      $securityGrp = 'Yes';
+    }
+  } else {
+    $securityGrp = 'No';
+  }
+    $grp_owners_array = array();
+    if(!empty($result_json_output->owners)) {
+      foreach ($result_json_output->owners as $key=>$value) {
+        $owners_value = !empty($value->value) ? $value->value : '';
+        $pos_u = strpos($owners_value, ',ou=worker,dc=tfayd,dc=com');
+        if ($pos_u === false) {//user id
+          //echo "The string '$findme' was not found in the string '$mystring'";
+        } else {
+          $grp_owners_array[$key]['primary'] = isset($value->primary) ? 1 : 0;
+          $manager_sso = substr($value->value, 0, $pos_u);
+          $manager_sso = ltrim($manager_sso, 'uid=');
+          $grp_owners_array[$key]['mgr_sso'] = $manager_sso;
+	  ctools_object_cache_clear('api', 'profile_data'.trim($manager_sso));
+          $info = _idm_profile_get_user(trim($manager_sso));
+          $info['displayname'] = empty($info['displayname']) ? '' : $info['displayname'];
+          $grp_owners_array[$key]['mgr_name'] = $info['displayname'];
+          $grp_owners_array[$key]['mgr_sso_name'] = $info['displayname'].' '.'('.$manager_sso.')';
+        }
+        $pos_g = strpos($owners_value, ',ou=Groups,dc=tfayd,dc=com');
+        if ($pos_g === false) {//group id
+          //echo "The string '$findme' was not found in the string '$mystring'";
+        } else {
+          $manager_sso = substr($value->value, 0, $pos_g);
+          $manager_sso = ltrim($manager_sso, 'cn=');
+          $grp_owners_array[$key]['mgr_sso'] = $manager_sso;
+	  ctools_object_cache_clear('api', 'group_info_'.$manager_sso);
+          $group_info = _idm_groups_get_group_info('DST',$manager_sso);
+          $group_info['displayName'] = empty($group_info['displayName']) ? '' : $group_info['displayName'];
+          $grp_owners_array[$key]['mgr_name'] = $group_info['displayName'];
+          $grp_owners_array[$key]['mgr_sso_name'] = $group_info['displayName'].' '.'('.$manager_sso.')';
+        }
+      }
+    }
+  $mgr_names_array = array();
+  $i = 0;
+  foreach($grp_owners_array as $value_name_sso) {
+    $mgr_names_array[$i] = $value_name_sso['mgr_sso_name'];
+    $i++;
+  }
+  $mgr_names_array_unique = array_unique($mgr_names_array);
+  $mgr_names = '';
+  foreach($mgr_names_array_unique as $value_name_sso_unique) {
+    if ($mgr_names != '') {
+      $mgr_names = $mgr_names.'<br>'.$value_name_sso_unique;
+    } else {
+      $mgr_names = $value_name_sso_unique;
+    }
+  }
+
+  //$req_for_info = _idm_profile_get_user(trim($result_json_output->custom_userId));
+  //echo '<pre>';
+  //print_r($req_for_info);
+  //$req_for_info['displayname'] = empty($req_for_info['displayname']) ? '' : $req_for_info['displayname'];
+  $req_for_info['direct_phone'] = empty($req_for_info['phone']['work']) ? 'Not Available' : $req_for_info['phone']['work'];
+  $req_for_info['job_function'] = empty($req_for_info['job_function']) ? 'Not Available' : $req_for_info['job_function'];
+  $req_for_info['title'] = empty($req_for_info['title']) ? 'Not Available' : $req_for_info['title'];
+  $req_for_info['managerfullname'] = empty($req_for_info['managerfullname']) ? 'Not Available' : $req_for_info['managerfullname'];
+  $req_for_info['email'] = empty($req_for_info['email']['work']) ? 'Not Available' : $req_for_info['email']['work'];
+
+  //Request Title Information
+  $req_title_details = array (
+    "Request Title" => $req_title,
+  );
+
+  //Requested By Information
+  $req_by_details = array (
+    "Request#" => empty($workitemId) ? '' : $workitemId,
+    "Request Date" => empty($result_json_output->RequestSubmissionDate) ? '' : $result_json_output->RequestSubmissionDate,
+    "Requested By" => empty($result_json_output->ReqFullName) ? '' : $result_json_output->ReqFullName.' '.'('.($result_json_output->ReqSSOId).')',
+    //"Requestor SSO" => empty($result_json_output->ReqSSOId) ? '' : $result_json_output->ReqSSOId,
+    //"Requestor Email" => empty($result_json_output->ReqEmail) ? '' : $result_json_output->ReqEmail,
+  );
+
+  //Requested For Information
+  $req_for_details = array (
+    "SSO" => empty($result_json_output->custom_userId) ? '' : $result_json_output->custom_userId,
+    "Full Name" => $req_for_info['displayname'],
+    "Email" => $req_for_info['email'],
+    "Manager/Sponsor" => $req_for_info['managerfullname'],
+    "Direct Phone" => $req_for_info['direct_phone'],
+    "Job Function" => $req_for_info['job_function'],
+    "Job Title" => $req_for_info['title'],
+  );
+
+  //"Group Information
+  $requestdetails = array (
+    "Group Display Name" => empty($result_json_output->displayname) ? '' : $result_json_output->displayname,
+    "Group Email ID" => empty($result_json_output->emails[0]->value) ? '' : $result_json_output->emails[0]->value,
+    "Security Group" => $securityGrp,
+    "Group Managers" => empty($mgr_names) ? '' : $mgr_names,
+  );
+
+  $var['req_title_details'] = $req_title_details;
+  $var['req_by_details'] = $req_by_details;
+  $var['req_for_details'] = $req_for_details;
+  $var['requestdetails'] = $requestdetails;
+
+  $form = idm_notification_approval_form_initiation($form, $form_state, $workitemId, $var, $custom_comments);
+  return $form;
+}
+
+function idm_notification_approval_create_group_form_validate($form, &$form_state) {
+  $workitemid = $form_state['values']['workitemid'];
+	if($form_state['values']['op'] == 'Submit'){
+		idm_notification_approve_request_process($workitemid, 'approve', 'Approval - Create group');
+	} else if($form_state['values']['op'] == 'Reject'){
+		idm_notification_approve_request_process($workitemid, 'reject', 'Approval - Create group');
+	} else if($form_state['values']['op'] == 'Cancel'){
+		drupal_goto();
+	}
+}
+
+function idm_notification_approval_join_group_form($form, &$form_state, $workitemId) {
+  $result_json_output = idm_notification_approval_variable_initiation($workitemId);
+  //echo '<pre>';
+  //print_r($result_json_output);
+  ctools_object_cache_clear('api', 'profile_data'.trim($result_json_output->ReqSSOId));
+  $req_title = 'Approval - Join Group "'.$result_json_output->displayname.'" for '.$result_json_output->ReqFullName.' '.'('.$result_json_output->ReqSSOId.')';
+  $custom_comments = !empty($result_json_output->entitlements->custom_comments) ? $result_json_output->entitlements->custom_comments : '' ;
+
+  $securityGrp = 'No';
+  if (!empty($result_json_output->securitygroup)) {
+      if ($result_json_output->securitygroup == 'FALSE') {
+        $securityGrp = 'No';
+      } else {
+        $securityGrp = 'Yes';
+      }
+  } else {
+    $securityGrp = 'No';
+  }
+  $grp_owners_array = array();
+  if(!empty($result_json_output->owners)) {
+    foreach ($result_json_output->owners as $key=>$value) {
+      $owners_value = !empty($value->value) ? $value->value : '';
+      $pos_u = strpos($owners_value, ',ou=worker,dc=tfayd,dc=com');
+      if ($pos_u === false) {//user id
+        //echo "The string '$findme' was not found in the string '$mystring'";
+      } else {
+        $grp_owners_array[$key]['primary'] = isset($value->primary) ? 1 : 0;
+        $manager_sso = substr($value->value, 0, $pos_u);
+        $manager_sso = ltrim($manager_sso, 'uid=');
+        $grp_owners_array[$key]['mgr_sso'] = $manager_sso;
+	ctools_object_cache_clear('api', 'profile_data'.trim($manager_sso));
+        $info = _idm_profile_get_user(trim($manager_sso));
+        $info['displayname'] = empty($info['displayname']) ? '' : $info['displayname'];
+        $grp_owners_array[$key]['mgr_name'] = $info['displayname'];
+        $grp_owners_array[$key]['mgr_sso_name'] = $info['displayname'].' '.'('.$manager_sso.')';
+      }
+      $pos_g = strpos($owners_value, ',ou=Groups,dc=tfayd,dc=com');
+      if ($pos_g === false) {//group id
+        //echo "The string '$findme' was not found in the string '$mystring'";
+      } else {
+        $manager_sso = substr($value->value, 0, $pos_g);
+        $manager_sso = ltrim($manager_sso, 'cn=');
+        $grp_owners_array[$key]['mgr_sso'] = $manager_sso;
+	ctools_object_cache_clear('api', 'group_info_'.$manager_sso);
+        $group_info = _idm_groups_get_group_info('DST',$manager_sso);
+        $group_info['displayName'] = empty($group_info['displayName']) ? '' : $group_info['displayName'];
+        $grp_owners_array[$key]['mgr_name'] = $group_info['displayName'];
+        $grp_owners_array[$key]['mgr_sso_name'] = $group_info['displayName'].' '.'('.$manager_sso.')';
+      }
+    }
+  }
+  $mgr_names_array = array();
+  $i = 0;
+  foreach($grp_owners_array as $value_name_sso) {
+    $mgr_names_array[$i] = $value_name_sso['mgr_sso_name'];
+    $i++;
+  }
+  $mgr_names_array_unique = array_unique($mgr_names_array);
+  $mgr_names = '';
+  foreach($mgr_names_array_unique as $value_name_sso_unique) {
+    if ($mgr_names != '') {
+      $mgr_names = $mgr_names.'<br>'.$value_name_sso_unique;
+    } else {
+      $mgr_names = $value_name_sso_unique;
+    }
+  }
+
+  $req_for_info = _idm_profile_get_user(trim($result_json_output->ReqSSOId));
+  $req_for_info['displayname'] = empty($req_for_info['displayname']) ? '' : $req_for_info['displayname'];
+  $req_for_info['direct_phone'] = empty($req_for_info['phone']['work']) ? 'Not Available' : $req_for_info['phone']['work'];
+  $req_for_info['email'] = empty($req_for_info['email']['work']) ? 'Not Available' : $req_for_info['email']['work'];
+  $req_for_info['job_function'] = empty($req_for_info['job_function']) ? 'Not Available' : $req_for_info['job_function'];
+  $req_for_info['title'] = empty($req_for_info['title']) ? 'Not Available' : $req_for_info['title'];
+  $req_for_info['managerfullname'] = empty($req_for_info['managerfullname']) ? 'Not Available' : $req_for_info['managerfullname'];
+  //$req_for_info['managerfullname'] = empty($result_json_output->PrmMgrFullName) ? 'Not Available' : $result_json_output->PrmMgrFullName;
+
+  //Request Title Information
+  $req_title_details = array (
+    "Request Title" => $req_title,
+  );
+
+  //Requested By Information
+  $req_by_details = array (
+    "Request#" => empty($workitemId) ? '' : $workitemId,
+    "Request Date" => empty($result_json_output->RequestSubmissionDate) ? '' : $result_json_output->RequestSubmissionDate,
+    "Requested By" => empty($result_json_output->ReqFullName) ? '' : $result_json_output->ReqFullName.' '.'('.($result_json_output->ReqSSOId).')',
+    //"Requestor SSO" => empty($result_json_output->ReqSSOId) ? '' : $result_json_output->ReqSSOId,
+    //"Requestor Email" => empty($result_json_output->ReqEmail) ? '' : $result_json_output->ReqEmail,
+  );
+
+  //Requested For Information
+  $req_for_details = array (
+    "SSO" => empty($result_json_output->custom_userId) ? '' : $result_json_output->custom_userId,
+    "Full Name" => $req_for_info['displayname'],
+    "Email" => $req_for_info['email'],
+    "Manager/Sponsor" => $req_for_info['managerfullname'],
+    "Direct Phone" => $req_for_info['direct_phone'],
+    "Job Function" => $req_for_info['job_function'],
+    "Job Title" => $req_for_info['title'],
+  );
+
+  //"Group Information
+  $requestdetails = array (
+    "Group Display Name" => empty($result_json_output->displayname) ? '' : $result_json_output->displayname,
+    "Group Email ID" => empty($result_json_output->emails[0]->value) ? '' : $result_json_output->emails[0]->value,
+    "Security Group" => $securityGrp,
+    "Group Managers" => empty($mgr_names) ? '' : $mgr_names,
+  );
+
+  $var['req_title_details'] = $req_title_details;
+  $var['req_by_details'] = $req_by_details;
+  $var['req_for_details'] = $req_for_details;
+  $var['requestdetails'] = $requestdetails;
+
+  $form = idm_notification_approval_form_initiation($form, $form_state, $workitemId, $var, $custom_comments);
+  return $form;
+}
+
+function idm_notification_approval_join_group_form_validate($form, &$form_state) {
+  $workitemid = $form_state['values']['workitemid'];
+	if($form_state['values']['op'] == 'Submit'){
+		idm_notification_approve_request_process($workitemid, 'approve', 'Approval - Join group');
+	} else if($form_state['values']['op'] == 'Reject'){
+		idm_notification_approve_request_process($workitemid, 'reject', 'Approval - Join group');
+	} else if($form_state['values']['op'] == 'Cancel'){
+		drupal_goto();
+	}
+}
+
+function idm_notification_approval_create_user_form($form, &$form_state, $workitemId) {
+  $result_json_output = idm_notification_approval_variable_initiation($workitemId);
+  $custom_comments = !empty($result_json_output->entitlements->custom_comments) ? $result_json_output->entitlements->custom_comments : '' ;
+
+	$givenName = empty($result_json_output->name->givenName) ? '' : $result_json_output->name->givenName;
+	$familyName = empty($result_json_output->name->familyName) ? '' : $result_json_output->name->familyName;
+  $contractor_details = array (
+    "Name" => $givenName.' '.$familyName,
+    "SSO" => empty($result_json_output->custom_userId) ? '' : $result_json_output->custom_userId,
+    "Email" => empty($result_json_output->custom_supplierEmail) ? '' : $result_json_output->custom_supplierEmail,
+    "Manager" => empty($result_json_output->manager->managerId) ? '' : $result_json_output->manager->managerId,
+    "Start Date" => empty($result_json_output->custom_startdate) ? '' : $result_json_output->custom_startdate,
+    "End Date" => empty($result_json_output->custom_enddate) ? '' : $result_json_output->custom_enddate,
+    "Job title" => empty($result_json_output->custom_jobTitle) ? '' : $result_json_output->custom_jobTitle,
+    "Phone" =>empty($result_json_output->phoneNumbers['0']->value) ? '' : $result_json_output->phoneNumbers['0']->value,
+  );
+	$var['contractor_details'] = $contractor_details;
+
+  $form = idm_notification_approval_form_initiation($form, $form_state, $workitemId, $var, $custom_comments);
+  return $form;
+}
+
+function idm_notification_approval_create_user_form_validate($form, &$form_state) {
+  $workitemid = $form_state['values']['workitemid'];
+	if($form_state['values']['op'] == 'Submit'){
+		idm_notification_approve_request_process($workitemid, 'approve', '');
+	} else if($form_state['values']['op'] == 'Reject'){
+		idm_notification_approve_request_process($workitemid, 'reject', '');
+	} else if($form_state['values']['op'] == 'Cancel'){
+		drupal_goto();
+	}
+}
+
+function idm_notification_approval_new_certificate_form($form, &$form_state, $workitemId) {
+  $result_json_output = idm_notification_approval_variable_initiation($workitemId);
+  $custom_comments = !empty($result_json_output->entitlements->custom_comments) ? $result_json_output->entitlements->custom_comments : '' ;
+
+  $contractor_details = array (
+    "Certificate Type" => empty($result_json_output->entitlements->custom_certificatetype) ? '' : $result_json_output->entitlements->custom_certificatetype,
+    "Certificate Usage" => empty($result_json_output->entitlements->custom_certificateusage) ? '' : $result_json_output->entitlements->custom_certificateusage,
+    "Asset Class" => empty($result_json_output->entitlements->custom_assetclass) ? '' : $result_json_output->entitlements->custom_assetclass,
+    "Asset Type" => empty($result_json_output->entitlements->custom_assettype) ? '' : $result_json_output->entitlements->custom_assettype,
+    "Make" => empty($result_json_output->entitlements->custom_make) ? '' : $result_json_output->entitlements->custom_make,
+    "Model" => empty($result_json_output->entitlements->custom_model) ? '' : $result_json_output->entitlements->custom_model,
+    "Asset Ownership" => empty($result_json_output->entitlements->custom_assetownership) ? '' : $result_json_output->entitlements->custom_assetownership,
+  );
+
+	$var['contractor_details'] = $contractor_details;
+
+  $form = idm_notification_approval_form_initiation($form, $form_state, $workitemId, $var, $custom_comments);
+  return $form;
+}
+
+function idm_notification_approval_new_certificate_form_validate($form, &$form_state) {
+  $workitemid = $form_state['values']['workitemid'];
+	if($form_state['values']['op'] == 'Submit'){
+		idm_notification_approve_request_process($workitemid, 'approve', '');
+	} else if($form_state['values']['op'] == 'Reject'){
+		idm_notification_approve_request_process($workitemid, 'reject', '');
+	} else if($form_state['values']['op'] == 'Cancel'){
+		drupal_goto();
+	}
+}
+
+function idm_notification_approval_new_rsa_form($form, &$form_state, $workitemId, $requestor, $req_date) {
+  $result_json_output = idm_notification_approval_variable_initiation($workitemId);
+  //echo '<pre>';
+  //print_r($result_json_output);
+  $req_for_info = _idm_profile_get_user(trim($result_json_output->custom_userId));
+  $req_for_info['displayname'] = empty($req_for_info['displayname']) ? '' : $req_for_info['displayname'];
+  $req_title = 'Primary Approval - "New RSA Soft Token Request for '.$req_for_info['displayname'].'('.$result_json_output->custom_userId.')"';
+  $custom_comments = !empty($result_json_output->entitlements->custom_comments) ? $result_json_output->entitlements->custom_comments : '' ;
+
+  $req_by_info = _idm_profile_get_user(trim($requestor));
+  $req_by_displayname = empty($req_by_info['displayname']) ? '' : $req_by_info['displayname'].' ('.$requestor.')';
+  $req_for_info['direct_phone'] = empty($req_for_info['phone']['work']) ? 'Not Available' : $req_for_info['phone']['work'];
+  $req_for_info['job_function'] = empty($req_for_info['job_function']) ? 'Not Available' : $req_for_info['job_function'];
+  $req_for_info['title'] = empty($req_for_info['title']) ? 'Not Available' : $req_for_info['title'];
+  $req_for_info['managerfullname'] = empty($req_for_info['managerfullname']) ? 'Not Available' : $req_for_info['managerfullname'];
+  $req_for_info['email'] = empty($req_for_info['email']['work']) ? 'Not Available' : $req_for_info['email']['work'];
+
+  //Request Title Information
+  $req_title_details = array (
+    "Request Title" => $req_title,
+  );
+
+  //Requested By Information
+  $req_by_details = array (
+    "Request#" => empty($workitemId) ? '' : $workitemId,
+    "Request Date" => empty($req_date) ? '' : $req_date,
+    "Requested By" => empty($req_by_displayname) ? '' : $req_by_displayname,
+    //"Requestor SSO" => empty($result_json_output->ReqSSOId) ? '' : $result_json_output->ReqSSOId,
+    //"Requestor Email" => empty($result_json_output->ReqEmail) ? '' : $result_json_output->ReqEmail,
+  );
+
+  //Requested For Information
+  $req_for_details = array (
+    "SSO" => empty($result_json_output->custom_userId) ? '' : $result_json_output->custom_userId,
+    "Full Name" => $req_for_info['displayname'],
+    "Email" => $req_for_info['email'],
+    "Manager/Sponsor" => $req_for_info['managerfullname'],
+    "Direct Phone" => $req_for_info['direct_phone'],
+    "Job Function" => $req_for_info['job_function'],
+    "Job Title" => $req_for_info['title'],
+  );
+
+  //Request Information
+  if(!empty($result_json_output->entitlements->custom_requestType) && ($result_json_output->entitlements->custom_requestType == 'Replacement')) {
+	  $requestdetails = array (
+	    "Device Type" => empty($result_json_output->entitlements->custom_deviceType) ? '' : $result_json_output->entitlements->custom_deviceType,
+	    "Type of Request" => empty($result_json_output->entitlements->custom_requestType) ? '' : $result_json_output->entitlements->custom_requestType,
+	    "Reason for Replacement" => empty($result_json_output->entitlements->custom_rsaReplaceReason) ? '' : $result_json_output->entitlements->custom_rsaReplaceReason,
+	    "Type of Token Request" => empty($result_json_output->entitlements->custom_tokenType) ? '' : $result_json_output->entitlements->custom_tokenType
+	  );
+  } else {
+	  $requestdetails = array (
+	    "Device Type" => empty($result_json_output->entitlements->custom_deviceType) ? '' : $result_json_output->entitlements->custom_deviceType,
+	    "Type of Request" => empty($result_json_output->entitlements->custom_requestType) ? '' : $result_json_output->entitlements->custom_requestType,
+	    "Type of Token Request" => empty($result_json_output->entitlements->custom_tokenType) ? '' : $result_json_output->entitlements->custom_tokenType
+	  );
+  }
+
+  $var['req_title_details'] = $req_title_details;
+  $var['req_by_details'] = $req_by_details;
+  $var['req_for_details'] = $req_for_details;
+  $var['requestdetails'] = $requestdetails;
+
+  $form = idm_notification_approval_form_initiation($form, $form_state, $workitemId, $var, $custom_comments);
+  return $form;
+}
+
+function idm_notification_approval_new_rsa_form_validate($form, &$form_state) {
+  $workitemid = $form_state['values']['workitemid'];
+	if($form_state['values']['op'] == 'Submit'){
+		idm_notification_approve_request_process($workitemid, 'approve', '');
+	} else if($form_state['values']['op'] == 'Reject'){
+		idm_notification_approve_request_process($workitemid, 'reject', '');
+	} else if($form_state['values']['op'] == 'Cancel'){
+		drupal_goto();
+	}
+}
+
+function idm_notification_approval_new_pomd_form($form, &$form_state, $workitemId, $requestor, $req_date) {
+  $result_json_output = idm_notification_approval_variable_initiation($workitemId);
+  //echo '<pre>';
+  //print_r($result_json_output);
+  $req_for_info = _idm_profile_get_user(trim($result_json_output->custom_userId));
+  $req_for_info['displayname'] = empty($req_for_info['displayname']) ? '' : $req_for_info['displayname'];
+  $req_title = 'Manager Approval - "New Admin Personally-owned Mobile Device Access Request for '.$req_for_info['displayname'].'('.$result_json_output->custom_userId.')"';
+  $custom_comments = !empty($result_json_output->entitlements->custom_comments) ? $result_json_output->entitlements->custom_comments : '' ;
+
+  $req_by_info = _idm_profile_get_user(trim($requestor));
+  $req_by_displayname = empty($req_by_info['displayname']) ? '' : $req_by_info['displayname'].' ('.$requestor.')';
+  $req_for_info['direct_phone'] = empty($req_for_info['phone']['work']) ? 'Not Available' : $req_for_info['phone']['work'];
+  $req_for_info['job_function'] = empty($req_for_info['job_function']) ? 'Not Available' : $req_for_info['job_function'];
+  $req_for_info['title'] = empty($req_for_info['title']) ? 'Not Available' : $req_for_info['title'];
+  $req_for_info['managerfullname'] = empty($req_for_info['managerfullname']) ? 'Not Available' : $req_for_info['managerfullname'];
+  $req_for_info['email'] = empty($req_for_info['email']['work']) ? 'Not Available' : $req_for_info['email']['work'];
+
+  //Request Title Information
+  $req_title_details = array (
+    "Request Title" => $req_title,
+  );
+
+  //Requested By Information
+  $req_by_details = array (
+    "Request#" => empty($workitemId) ? '' : $workitemId,
+    "Request Date" => empty($req_date) ? '' : $req_date,
+    "Requested By" => empty($req_by_displayname) ? '' : $req_by_displayname,
+    //"Requestor SSO" => empty($result_json_output->ReqSSOId) ? '' : $result_json_output->ReqSSOId,
+    //"Requestor Email" => empty($result_json_output->ReqEmail) ? '' : $result_json_output->ReqEmail,
+  );
+
+  //Requested For Information
+  $req_for_details = array (
+    "SSO" => empty($result_json_output->custom_userId) ? '' : $result_json_output->custom_userId,
+    "Full Name" => $req_for_info['displayname'],
+    "Email" => $req_for_info['email'],
+    "Manager/Sponsor" => $req_for_info['managerfullname'],
+    "Direct Phone" => $req_for_info['direct_phone'],
+    "Job Function" => $req_for_info['job_function'],
+    "Job Title" => $req_for_info['title'],
+  );
+
+  //Request Information
+  $requestdetails = array (
+    //"Device Id" => empty($result_json_output->entitlements->custom_mobDeviceID) ? '' : $result_json_output->entitlements->custom_mobDeviceID,
+    "Type of Device" => empty($result_json_output->entitlements->custom_model) ? '' : $result_json_output->entitlements->custom_model
+  );
+
+  $var['req_title_details'] = $req_title_details;
+  $var['req_by_details'] = $req_by_details;
+  $var['req_for_details'] = $req_for_details;
+  $var['requestdetails'] = $requestdetails;
+
+  $form = idm_notification_approval_form_initiation($form, $form_state, $workitemId, $var, $custom_comments);
+  return $form;
+}
+
+function idm_notification_approval_new_pomd_form_validate($form, &$form_state) {
+  $workitemid = $form_state['values']['workitemid'];
+	if($form_state['values']['op'] == 'Submit'){
+		idm_notification_approve_request_process($workitemid, 'approve', '');
+	} else if($form_state['values']['op'] == 'Reject'){
+		idm_notification_approve_request_process($workitemid, 'reject', '');
+	} else if($form_state['values']['op'] == 'Cancel'){
+		drupal_goto();
+	}
+}
+
+function idm_notification_approval_new_tilde_form($form, &$form_state, $workitemId, $requestor, $req_date) {
+  $result_json_output = idm_notification_approval_variable_initiation($workitemId);
+  //echo '<pre>';
+  //print_r($result_json_output);
+  $req_for_info = _idm_profile_get_user(trim($result_json_output->custom_userId));
+  $req_for_info['displayname'] = empty($req_for_info['displayname']) ? '' : $req_for_info['displayname'];
+  $req_title = 'Primary Approval - "New Admin Tilde Account Request for '.$req_for_info['displayname'].'('.$result_json_output->custom_userId.')"';
+  $custom_comments = !empty($result_json_output->entitlements->custom_comments) ? $result_json_output->entitlements->custom_comments : '' ;
+
+  $req_by_info = _idm_profile_get_user(trim($requestor));
+  $req_by_displayname = empty($req_by_info['displayname']) ? '' : $req_by_info['displayname'].' ('.$requestor.')';
+  $req_for_info['direct_phone'] = empty($req_for_info['phone']['work']) ? 'Not Available' : $req_for_info['phone']['work'];
+  $req_for_info['job_function'] = empty($req_for_info['job_function']) ? 'Not Available' : $req_for_info['job_function'];
+  $req_for_info['title'] = empty($req_for_info['title']) ? 'Not Available' : $req_for_info['title'];
+  $req_for_info['managerfullname'] = empty($req_for_info['managerfullname']) ? 'Not Available' : $req_for_info['managerfullname'];
+  $req_for_info['email'] = empty($req_for_info['email']['work']) ? 'Not Available' : $req_for_info['email']['work'];
+
+  //Request Title Information
+  $req_title_details = array (
+    "Request Title" => $req_title,
+  );
+
+  //Requested By Information
+  $req_by_details = array (
+    "Request#" => empty($workitemId) ? '' : $workitemId,
+    "Request Date" => empty($req_date) ? '' : $req_date,
+    "Requested By" => empty($req_by_displayname) ? '' : $req_by_displayname,
+    //"Requestor SSO" => empty($result_json_output->ReqSSOId) ? '' : $result_json_output->ReqSSOId,
+    //"Requestor Email" => empty($result_json_output->ReqEmail) ? '' : $result_json_output->ReqEmail,
+  );
+
+  //Requested For Information
+  $req_for_details = array (
+    "SSO" => empty($result_json_output->custom_userId) ? '' : $result_json_output->custom_userId,
+    "Full Name" => $req_for_info['displayname'],
+    "Email" => $req_for_info['email'],
+    "Manager/Sponsor" => $req_for_info['managerfullname'],
+    "Direct Phone" => $req_for_info['direct_phone'],
+    "Job Function" => $req_for_info['job_function'],
+    "Job Title" => $req_for_info['title'],
+  );
+
+  //Request Information
+  $requestdetails = array (
+    "Copy Profile" => empty($result_json_output->entitlements->custom_copyprofileSSO) ? '' : $result_json_output->entitlements->custom_copyprofileSSO
+  );
+
+  $var['req_title_details'] = $req_title_details;
+  $var['req_by_details'] = $req_by_details;
+  $var['req_for_details'] = $req_for_details;
+  $var['requestdetails'] = $requestdetails;
+
+  $form = idm_notification_approval_form_initiation($form, $form_state, $workitemId, $var, $custom_comments);
+  return $form;
+}
+
+function idm_notification_approval_new_tilde_form_validate($form, &$form_state) {
+  $workitemid = $form_state['values']['workitemid'];
+	if($form_state['values']['op'] == 'Submit'){
+		idm_notification_approve_request_process($workitemid, 'approve', '');
+	} else if($form_state['values']['op'] == 'Reject'){
+		idm_notification_approve_request_process($workitemid, 'reject', '');
+	} else if($form_state['values']['op'] == 'Cancel'){
+		drupal_goto();
+	}
+}
+
+function idm_notification_approval_variable_initiation($workitemId) {
+  global $user;
+  $req_id = empty($user->name) ? '' : $user->name;
+  $url = variable_get('rest_api_check_url', 'http://3.3.175.127:8080/idm-api/rest');
+  $url .= '/workflow/approvals/'.rawurlencode($workitemId).'?requestor='.urlencode($req_id);
+  //http://3.3.175.127:8080/idm-api/rest/workflow/approvals/1%204%203146:WPDS?requestor=206426150
+  $request_json = '';
+  $method = 'GET';
+  $result_output = idm_profile_execute_curl($url, '', $method);
+  $result_json_output = json_decode($result_output);
+  return $result_json_output;
+}
+
+function idm_notification_approval_form_initiation($form, &$form_state, $workitemId, $var, $custom_comments) {
+  $form['outerdivstart'] = array(
+    '#title' => t('Name'),
+    '#type' => 'markup',
+    '#prefix' => '<div id="contractor_details-info">'
+  );
+
+  $form['name'] = array(
+    '#title' => t('Name'),
+    '#type' => 'markup',
+    '#markup' => theme('contractor_details', $var),
+  );
+
+  $form['namedivstart'] = array(
+    '#title' => t('Name'),
+    '#type' => 'markup',
+    '#prefix' => '<div class="assets-certificate-info"><div class="assets-certificate-wrapper">'
+  );
+
+  $form['comments'] = array(
+      '#title' => t('Comments'),
+      '#type' => 'textarea',
+      '#value' => $custom_comments,
+      '#required' => FALSE,
+	    '#resizable' => FALSE,
+      '#prefix' => '<div class="field-row comments-approve-reject"><span title="This field is required." class="form-required">&nbsp&nbsp</span>',
+      '#suffix' => '</div>',
+	  '#attributes' => array (
+		  'class' => array (
+			'plain-text-area'
+		  )
+		),
+  );
+  $form['workitemid'] = array(
+      '#type' => 'hidden',
+      '#value' => $workitemId,
+      '#prefix' => '<div class="workitemid-approve-reject">',
+      '#suffix' => '</div>'
+  );
+  $form['submit'] = array (
+    '#type' => 'submit',
+    '#value' => t('Submit'),
+    '#attributes' => array('class' => array('submit-button small_button hover-blue')),
+	  '#prefix' => '<div class="submit-buttons-row submit-approve-reject" >',
+  );
+  $form['reject'] = array (
+    '#type' => 'button',
+    '#value' => t('Reject'),
+    '#attributes' => array('class' => array('reject-button small_button hover-grey')),
+  );
+  $form['cancel'] = array (
+    '#type' => 'button',
+    '#value' => t('Cancel'),
+    '#attributes' => array('class' => array('cancel-button small_button hover-grey')),
+    '#suffix' => '</div>',
+  );
+  $form['namedivend'] = array(
+      '#title' => t('Name'),
+      '#type' => 'markup',
+      '#suffix' => '</div>'
+      );
+
+  $form['outerdivend'] = array(
+      '#title' => t('Name'),
+      '#type' => 'markup',
+      '#suffix' => '</div></div>'
+      );
+  return $form;
+}
+
+function idm_notification_approve_request($custom_id='', $custom_action='', $cus_id='rest') {
+  global $user;
+  $requestor = empty($user->name) ? '' : $user->name;
+  $url = variable_get('rest_api_check_url', 'http://3.3.175.127:8080/idm-api/rest');
+  $url .= '/workflow/approvals/action/'.$requestor.'?requestor='.urlencode($requestor);
+  $request = new stdClass();
+  $request->schemas = array (
+    'urn:scim:schemas:core:1.0'
+  );
+  $request->custom_workitemId = $custom_id ;
+  $request->custom_action = $custom_action;
+  if ($cus_id == 'cg') {
+	  $request->Title = 'Approval - Create group';
+  } else if ($cus_id == 'jg') {
+    $request->Title = 'Approval - Join group';
+  } else {
+  }
+  $request_json = json_encode($request);
+  $method = 'POST';
+  $result = idm_profile_execute_curl($url, $request_json, $method);
+  $result_json = json_decode($result);
+  $output = '';
+  if($result_json->op_status == SUCCESS){
+    ctools_object_cache_clear('api', 'approve_request');
+    ctools_object_cache_clear('api', 'approve_count');
+    $_SESSION['approve_action'] = true;
+    if($custom_action == 'approve') {
+		$output .= '<div class="approve_request-msg"><img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">Request has been approved. You will receive a notification with the access details.</div></div>';
+		print $output;
+    }
+    else {
+		$output .= '<div class="approve_request-msg"><img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">Request has been rejected. You will receive a notification with the request details.</div></div>';
+		print $output;
+    }
+  }else{
+    $output .= '<div class="error_request-msg"><img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">Error occurred while processing the request. Please contact the <a href="mailto:'.variable_get('idm_contact_emailid','identityservicessupportIDM@nbcuni.com').'">IdM Support Team</a> for assistance.</div>';
+    //$output .= '<div class="error_request-msg"><img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">Error occurred while processing the request. Please contact the <a href="mailto:identityservicessupportIDM@nbcuni.com">IdM Support Team</a> for assistance.<br>DEBUG Info<br>'.$result_json->errorMessage.'</div>';
+    print $output;
+  }
+}
+
+function idm_notification_approve_request_process($custom_id='', $custom_action='', $titlePassed) {
+  global $user;
+  $requestor = empty($user->name) ? '' : $user->name;
+  $url = variable_get('rest_api_check_url', 'http://3.3.175.127:8080/idm-api/rest');
+  $url .= '/workflow/approvals/action/'.$requestor.'?requestor='.urlencode($requestor);
+  $request = new stdClass();
+  $request->schemas = array (
+    'urn:scim:schemas:core:1.0'
+  );
+  $request->custom_workitemId = $custom_id ;
+  $request->custom_action = $custom_action;
+  if ($titlePassed != '') {
+    $request->Title = $titlePassed;
+  }
+  $request_json = json_encode($request);
+  //echo '<pre>';
+  //print_r($request_json);
+  //exit;
+  $method = 'POST';
+  $result = idm_profile_execute_curl($url, $request_json, $method);
+  $result_json = json_decode($result);
+  $output = '';
+  if($result_json->op_status == SUCCESS){
+    ctools_object_cache_clear('api', 'approve_request');
+    ctools_object_cache_clear('api', 'approve_count');
+    $_SESSION['approve_action'] = true;
+    if($custom_action == 'approve') {
+      //echo '1';
+      $output .= 'Request has been approved. You will receive a notification with the access details.';
+      drupal_set_message(filter_xss('<img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">'.$output, $allowed_tags = array('img')));
+	  //drupal_set_message($output);
+      drupal_goto();
+    }
+    else {
+      //echo '2';
+      $output .= 'Request has been rejected. You will receive a notification with the request details.';
+	  drupal_set_message(filter_xss('<img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">'.$output, $allowed_tags = array('img')));
+      //drupal_set_message($output);
+      drupal_goto();
+    }
+  } else {
+    //echo '3';
+    $output .= 'Error occurred while processing the request. Please contact the <a href="mailto:'.variable_get('idm_contact_emailid','identityservicessupportIDM@nbcuni.com').'">IdM Support Team</a> for assistance.';
+    //$output .= 'Error occurred while processing the request. Please contact the <a href="mailto:identityservicessupportIDM@nbcuni.com">IdM Support Team</a> for assistance.<br>DEBUG Info<br>'.$result_json->errorMessage;
+	  form_set_error('<img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">'.$output);
+    //form_set_error($output);
+	  drupal_goto();
+  }
+}
+
+function idm_notification_approve_request_all($custom_id_all='', $custom_action='') {
+  global $user;
+  $requestor = empty($user->name) ? '' : $user->name;
+  $url = variable_get('rest_api_check_url', 'http://3.3.175.127:8080/idm-api/rest');
+  $url .= '/workflow/approvals/action/'.$requestor.'?requestor='.urlencode($requestor);
+  $custom_id_array = array();
+  $success_custom_id = array();
+  $error_custom_id = array();
+  $output ='';
+  $custom_id_array = explode(")",$custom_id_all);
+  foreach($custom_id_array as $custom_id){
+    $request = new stdClass();
+    $request->schemas = array (
+      'urn:scim:schemas:core:1.0'
+    );
+    $request->custom_workitemId = $custom_id ;
+    $request->custom_action = $custom_action;
+    $request_json = json_encode($request);
+    $method = 'POST';
+    $result = idm_profile_execute_curl($url, $request_json, $method);
+    $result_json = json_decode($result);
+    if($result_json->op_status == SUCCESS){
+      ctools_object_cache_clear('api', 'approve_request');
+      ctools_object_cache_clear('api', 'approve_count');
+      $success_custom_ids[] = $custom_id;
+    } else {
+      $error_custom_ids[] = $custom_id;
+    }
+  }
+  $success_count = count($success_custom_ids);
+  $error_count = count($error_custom_ids);
+  $success_string = implode(",", $success_custom_ids);
+  $error_string = implode(",", $error_custom_ids);
+  //header('Content-Type: application/json');
+  $output_data = json_encode(array('success_string' => $success_string, 'error_string' => $error_string, 'success_custom_ids' => $success_custom_ids, 'error_custom_ids' => $error_custom_ids, 'success_count' => $success_count, 'error_count' => $error_count));
+  print $output_data;
+  //$output = '<div class="approve_request-msg"><img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">Request has been submitted. Successful requests :-<br>'.$success_string.'<br> Not Successful requests :-<br>'.$error_string.'  </div>';
+  //print $output;
+}
+
+function idm_notification_renew_view_all() {
+  ctools_include('object-cache');
+  global $user;
+  $var = array('renews' => array(), 'renews_count' => 0);
+  $renew_content = array();
+  $userid = empty($user->name) ? '' : $user->name;
+  $allowed_roles = array('employee', 'contractor');
+  $roles = $user->roles;
+  $roles = array_map('strtolower', $roles);
+  $roles_present = array_intersect($roles, $allowed_roles);
+  if (empty($roles_present)) return false;
+
+  $api_url = variable_get('rest_api_check_url');
+  $service_url =  $api_url . '/internal/users?filter='.urlencode('manager.managerId eq '.$userid.' and userType eq '.CONTRACTOR);
+  $data = ctools_object_cache_get('api', 'renew_request');
+  if(empty($data)){
+    $result = _idm_portal_get_api_data($service_url);
+    if(!empty($result->data)){
+      $data = $result->data;
+      ctools_object_cache_set('api', 'renew_request', $data);
+    }
+  }
+  $html = '';
+  if(!empty($data)){
+    $contractor_data = json_decode($data);
+	  $count = 0;
+	  foreach($contractor_data->Resources AS $contractor){
+        if(isset($contractor->custom_enddate)) {
+          if(is_array($contractor->custom_enddate)) {
+            foreach($contractor->custom_enddate as $val) {
+              $contractor->custom_enddate = $val->value;
+            }
+          }
+          if(strtotime($contractor->custom_enddate) < idm_portal_strtotime('+'.RENEWAL_LISTING_PERIOD)){
+            if($count > 9 ) {
+              $date = empty($contractor->emp_date) ? time() : strtotime($contractor->emp_date);
+              $one_moth = date("m/d/Y", idm_portal_strtotime("+1 month"));
+              $three_moth = date("m/d/Y", idm_portal_strtotime("+3 month"));
+              $six_moth = date("m/d/Y", idm_portal_strtotime("+6 month"));
+              $sso_id = isset($contractor->id)? $contractor->id:"";
+              $html .= '<tr class = "data_row" >
+                      <td  class = "employee_name_td"><p class = "employee" ><a href="/profile/'. $sso_id .'">';
+              $html .= wordwrap(idm_profile_format_display_name($contractor,false),20,"<br>\n").'</a></p></td>
+                      <td class = "employee_title_td" >
+                        <p class = "employee normal" >';
+              $html .= $contractor->Title.'</p></td>
+                      <td class = "employee_expire_td" >
+                        <p class = "employee normal error" >';
+              $html .= date('m/d/Y',strtotime($contractor->custom_enddate)).'</p></td>
+                   <td class = "employee_button_td">
+                   <button id="'. $sso_id .'" class = "small_button hover-green renew-button">Renew</button>
+
+                     <div class="mobile-renew-button"><a href="/mobile-renew/'. $sso_id .'"><button class="small_button hover-green mobile-renew-button">Renew</button></a></div>
+
+                    <div class="renew-alert alert-actions renew-alert-each" style="display: none;" userid="'. $sso_id .'" id="rb-'. $sso_id .'">
+                    <ul  class="main-actions" userid="'. $sso_id .'" username= "'. idm_profile_format_display_name($contractor,false) .'">
+                    <li>
+                    <span class="radio" style="background-position: 0px 0px;"></span><input type="radio" name="renew" value="1" class="styled form-radio" /><span class="duration">1 month(<span class="date" renew_date = "'. $one_moth .'">';
+              $html .= date("m/d/y", idm_portal_strtotime("+1 month")).'</span>)</span></li>
+                    <li>
+                    <span class="radio" style="background-position: 0px 0px;"></span><input type="radio" name="renew" value="3" class="styled form-radio" /><span class="duration">3 months(<span class="date" renew_date = "'. $three_moth .'">';
+              $html .= date("m/d/y", idm_portal_strtotime("+3 month")).'</span>)</span>
+                    </li>
+                    <li>
+                    <span class="radio" style="background-position: 0px 0px;"></span><input type="radio" name="renew" value="6" class="styled form-radio" /><span class="duration">6 months(<span class="date" renew_date = "'. $six_moth .'">';
+              $html .= date("m/d/y", idm_portal_strtotime("+6 month")).'</span>)</span>
+                    </li>
+                    </ul>
+                    <div class="actions">';
+              $html .=  '<button custom_id="'. $sso_id .'"class="small_button hover-green disabled_button submit">Submit</button>
+                    </div>
+                    <div class="ajax_throbber"><img src="/sites/all/themes/idmtheme/images/ajax-loader.gif"></div>
+                    </div>
+                    </td>
+                    </tr>';
+             }
+           }
+         }
+        $count++;
+    }
+  }
+  print $html;
+}
+
+function idm_notification_approve_view_all() {
+  ctools_include('object-cache');
+  global $user;
+  $var = array('approve' => array(), 'approve_count' => 0);
+  $approve_content = array();
+  $userid = empty($user->name) ? '' : $user->name;
+  $allowed_roles = array('employee', 'contractor');
+  $roles = $user->roles;
+  $roles = array_map('strtolower', $roles);
+  $roles_present = array_intersect($roles, $allowed_roles);
+  if (empty($roles_present)) return false;
+
+  $api_url = variable_get('rest_api_check_url');
+  $service_url =  $api_url . '/workflow/approvals?requestor='.$userid.'&filterString='.rawurlencode('owner eq '.$userid);
+  $data = ctools_object_cache_get('api', 'approve_request');
+  if(empty($data)){
+    $result = _idm_portal_get_api_data($service_url);
+    if(!empty($result->data)){
+      $data = $result->data;
+      ctools_object_cache_set('api', 'approve_request', $data);
+    }
+  }
+  $html = '';
+  if(!empty($data)){
+    $approve_data = json_decode($data);
+	  if (!empty($approve_data->results['1']->custom_ViewMyWorkListWorkListTab->custom_WorkList->custom_currentvalue)) {
+	  $count = 0; foreach($approve_data->results['1']->custom_ViewMyWorkListWorkListTab->custom_WorkList->custom_currentvalue AS $approve){
+        if($count >9 ) {
+          $request_link = "";
+          $strpos_cg = strpos($approve->Title,"Create group");
+          $strpos_jg = strpos($approve->Title,"Join Group");
+          $strpos_cu = strpos($approve->Title,"Create user");
+          $strpos_cu_c = strpos($approve->Title,"Create Contractor");
+          $strpos_cu_f = strpos($approve->Title,"Create Functional");
+          $strpos_nc = strpos($approve->Title,"New Certificate");
+          $strpos_st = strpos($approve->Title,"New RSA Soft Token");
+          $strpos_pm = strpos($approve->Title,"New Personally-owned Mobile Device Access");
+          $strpos_ta = strpos($approve->Title,"New Admin Tilde Account");
+
+          //$posofsso = strpos($sso,"(");
+          //$req_sso = rtrim(substr($sso, $posofsso+1),")");
+          //list($sso, ) = explode(",", $approve->custom_Initiator);
+          $posofsso = strpos($approve->custom_Initiator,"(");
+          $req_sso = rtrim(substr($approve->custom_Initiator, $posofsso+1),")");
+          $req_date = date('M-d-Y', strtotime($approve->custom_InitiationDate));
+          $posofname = strpos($approve->custom_Initiator,"(");
+          $req_name = substr($approve->custom_Initiator, 0, $posofname);
+
+          if ($strpos_cg !== false) {
+            $cus_id = 'cg';
+            $request_link = 'approval-create-group/'.$approve->custom_Id;
+          } else if ($strpos_jg !== false) {
+            $cus_id = 'jg';
+            $request_link = 'approval-join-group/'.$approve->custom_Id;
+          } else if (($strpos_cu !== false) || ($strpos_cu_c !== false) || ($strpos_cu_f !== false)) {
+            $cus_id = 'cu';
+            $request_link = 'approval-create-user/'.$approve->custom_Id;
+          } else if ($strpos_nc !== false) {
+            $cus_id = 'nc';
+            $request_link = 'approval-new-certificate/'.$approve->custom_Id;
+          } else if ($strpos_st !== false) {
+            $cus_id = 'st';
+            $request_link = 'approval-new-rsa/'.$approve->custom_Id.'/'.$req_sso.'/'.$req_date;
+          } else if ($strpos_pm !== false) {
+            $cus_id = 'pm';
+            $request_link = 'approval-new-pomd/'.$approve->custom_Id.'/'.$req_sso.'/'.$req_date;
+          } else if ($strpos_ta !== false) {
+            $cus_id = 'ta';
+            $request_link = 'approval-new-tilde/'.$approve->custom_Id.'/'.$req_sso.'/'.$req_date;
+          } else {
+            $cus_id = 'rest';
+          }
+          $html .= '<tr class = "data_row" cus_id = "'.$cus_id.'" custom_id = "'.$approve->custom_Id.'">
+                      <td  class = "employee_name_td"><p class = "employee" ><a href="'.$request_link.'">';
+          $html .= $approve->custom_Name.'</a></p></td>
+                      <td class = "employee_request_td" >
+                        <p class = "employee normal" ><a href="'.$request_link.'">';
+          $html .= $approve->Title.'</a></p></td>
+                      <td class = "employee_requestor_td" >
+                        <p class = "employee normal" >';
+          /*$html .= $req_sso.'</p></td>
+                      <td class = "employee_date_td" >
+                        <p class = "employee normal" >';
+          */
+          $html .= l($req_name, 'profile/'.$req_sso).'</p></td>
+                      <td class = "employee_date_td" >
+                        <p class = "employee normal" >';
+          $html .= date('m/d/Y',strtotime($approve->custom_InitiationDate)).'</p>
+                      </td>
+                      <td class = "employee_button_td">
+                        <div class="actions">
+                          <button class = "sprite-icons-copy"></button>
+                          <button class = "sprite-icons-cross"></button>
+                        </div>
+                      </td>
+                    </tr>';
+        }
+        $count++;
+      }
+    }
+  }
+  print $html;
+}
+
+function idm_notification_submitted_view_all() {
+  ctools_include('object-cache');
+  global $user;
+  $var = array('submitted' => array(), 'submitted_count' => 0);
+  $submitted_content = array();
+  $userid = empty($user->name) ? '' : $user->name;
+  $allowed_roles = array('employee', 'contractor');
+  $roles = $user->roles;
+  $roles = array_map('strtolower', $roles);
+  $roles_present = array_intersect($roles, $allowed_roles);
+  if (empty($roles_present)) return false;
+
+  $api_url = variable_get('rest_api_check_url');
+  $service_url =  $api_url . '/workflow/request/submittedtasks?requestor='.$userid;
+  $data = ctools_object_cache_get('api', 'submitted_taks');
+  if(empty($data)){
+    //cache_clear_all('*', 'cache', TRUE);
+    $result = _idm_portal_get_api_data($service_url);
+    if(!empty($result->data)){
+      $data = $result->data;
+      ctools_object_cache_set('api', 'submitted_taks', $data);
+    }
+  }
+  $html = '';
+  if(!empty($data)){
+    $submitted_data = json_decode($data);
+    if (!empty( $submitted_data->results['1']->custom_ViewMySubmittedTasksSubmittedTasksTab->custom_TaskList->custom_currentvalue)) {
+      $count = 0;
+      foreach( $submitted_data->results['1']->custom_ViewMySubmittedTasksSubmittedTasksTab->custom_TaskList->custom_currentvalue AS $submitted){
+        if($count > 4 ) {
+          if(!empty($submitted)){
+            $html .= '<tr class = "data_row">
+                      <td  class = "submitted_task">
+                        <p class = "submitted" >';
+            $html .= '<a href="/submitted_task/'.$submitted->Id.'">'.$submitted->custom_TaskName.'</a></p></td>';
+                      /* <td class = "submitted_by" >
+                        <p class = "submitted normal" >'; */
+            $html .= /*$submitted->custom_SubmittedBy.'</p></td>*/
+                      '<td class = "submitted_date" >
+                        <p class = "submitted normal" >';
+            $html .= date('m/d/Y',strtotime($submitted->custom_Submitted)).'</p></td>
+                      <td class = "updated_date" >
+                        <p class = "submitted normal" >';
+            $html .= date('m/d/Y',strtotime($submitted->custom_LastUpdated)).'</p></td>
+                      <td class = "submitted_status" >
+                        <p class = "submitted normal" >';
+            $html .= $submitted->custom_Status.'</p>
+                      </td>
+                    </tr>';
+		  }
+        }
+        $count++;
+      }
+    }
+  }
+  print $html;
+}
+
+function idm_notification_expiringgroups_view_all() {
+  global $user;
+  $expiringgroups_list = array();
+  ctools_include('object-cache');
+  //idm_notifications_flush_caches();
+  $var = array('expiringgroups' => array(), 'expiringgroups_count' => 10);
+  $userid = empty($user->name) ? '' : $user->name;
+  $expiringgroups_list = _idm_groups_get_grouplist('mygroups', 'expirationdate', 'descending');
+  $html = '';
+  if(!empty($expiringgroups_list)){
+	  $count = 0;
+	  $expiringgroups_content = array();
+	  foreach($expiringgroups_list AS $expiringgroup){
+	  if(isset($expiringgroup['id']) && ($expiringgroup['expirationdate'] != "Never") &&(strtotime($expiringgroup['expirationdate']) < idm_portal_strtotime('+'.RENEWAL_LISTING_PERIOD))){
+		  $expiringgroups_content[] = $expiringgroup;
+		  if($count > 9 ) {
+			  $id = $expiringgroup['id'];
+			  $name = $expiringgroup['name'];
+			  $memberscount = $expiringgroup['memberscount'];
+			  $expirationdate = $expiringgroup['expirationdate'];
+			  $buttontext = $expiringgroup['buttontext'];
+
+			  $html .= '<tr class = "data_row">';
+			  $html .= '<td  class = "expiringgroups_name_td">
+						<p class = "expiringgroups" ><a href="/group/DST/'.$id.'">'.$name.'</a></p>
+						</td>';
+			  $html .= '<td  class = "expiringgroups_title_td">
+						<p class = "expiringgroups normal" >'.$memberscount.' Members</p>
+						</td>';
+			  $html .= '<td class = "expiringgroups_expire_td" >
+						<p id ="expire-'.$expirationdate.'" class = "expiringgroups normal '.$expirationdate.'" >'.$expirationdate.'</p>
+						</td>';
+			  $html .= '<td class = "expiringgroups_button_td">
+						<button id="'.$id.'" class="small_button hover-green renew-button">'.$buttontext.'</button>
+						<div class="renew-alert group-alert-actions alert-actions renew-alert-each" style="display: none;" gtype="DST" gid="'.$id.'" id="rb-'.$id.'">
+						<ul  class="main-actions" gid="'.$id.'" username="'.$name.'" >
+						<li>
+						<span class="radio" style="background-position: 0px 0px;"></span><input type="radio" name="renew" value="1" class="styled form-radio"/><span class="duration">1 month(<span class="date" expiringgroups_date = "'.date("m/d/Y", idm_portal_strtotime("+1 month")).'">'.date("m/d/y", idm_portal_strtotime("+1 month")).'</span>)</span>
+						</li>
+						 <li>
+						<span class="radio" style="background-position: 0px 0px;"></span><input type="radio" name="renew" value="3" class="styled form-radio"/><span class="duration">3 month(<span class="date" expiringgroups_date = "'.date("m/d/Y", idm_portal_strtotime("+3 month")).'">'.date("m/d/y", idm_portal_strtotime("+3 month")).'</span>)</span>
+						</li>
+						 <li>
+						<span class="radio" style="background-position: 0px 0px;"></span><input type="radio" name="renew" value="6" class="styled form-radio"/><span class="duration">6 month(<span class="date" expiringgroups_date = "'.date("m/d/Y", idm_portal_strtotime("+6 month")).'">'.date("m/d/y", idm_portal_strtotime("+6 month")).'</span>)</span>
+						</li>
+						</ul>
+						<div class="actions">
+						<button custom_id="'.$id.'" class="small_button hover-green submit">Submit</button>
+						</div>
+						<div class="ajax_throbber"><img src="/sites/all/themes/idmtheme/images/ajax-loader.gif"></div>
+						</div>
+						</td>';
+			 $html .=  '</tr>';
+		  }
+			$count++;
+		}
+    }
+  }
+  $var['expiringgroups_count'] = count($expiringgroups_content);
+  $var['expiringgroups'] = $expiringgroups_content;
+  print $html;
+}
+
+function idm_notification_submitted_single($task_id) {
+  global $user;
+  $requestor = empty($user->name) ? '' : $user->name;
+  $url = variable_get('rest_api_check_url', 'http://3.3.175.127:8080/idm-api/rest');
+  $url .= '/workflow/task/details/'.rawurlencode($task_id).'?requestor='.urlencode($requestor);
+  //http://3.3.175.127:8080/idm-api/rest/workflow/task/details/{task_id}?requestor={SSO ID}
+  $request_json = '';
+  $method = 'GET';
+  $result_output = idm_profile_execute_curl($url, '', $method);
+  $result_json_output = json_decode($result_output);
+  //echo '<pre>';
+  //print_r($result_json_output);
+
+  $contractor_details = array (
+    "Preferred Name" => isset($result_json_output->custom_preferredName) ? $result_json_output->custom_preferredName : '',
+    "Legal First Name" => isset($result_json_output->name->givenName) ? $result_json_output->name->givenName : '',
+    "Legal Last Name" => isset($result_json_output->name->familyName) ? $result_json_output->name->familyName : '',
+    "Office" => isset($result_json_output->addresses[0]->custom_office) ? $result_json_output->addresses[0]->custom_office : '',
+    "Floor" => isset($result_json_output->addresses[0]->custom_floor) ? $result_json_output->addresses[0]->custom_floor : '',
+    "Building" => isset($result_json_output->addresses[0]->custom_building) ? $result_json_output->addresses[0]->custom_building : '',
+    "Street Address" => isset($result_json_output->addresses[0]->streetAddress) ? $result_json_output->addresses[0]->streetAddress : '',
+    "Locality" => isset($result_json_output->addresses[0]->locality) ? $result_json_output->addresses[0]->locality : '',
+    "Region" => isset($result_json_output->addresses[0]->region) ? $result_json_output->addresses[0]->region : '',
+    "Country" => isset($result_json_output->addresses[0]->country) ? $result_json_output->addresses[0]->country : '',
+    "Postal Code" => isset($result_json_output->addresses[0]->postalCode) ? $result_json_output->addresses[0]->postalCode : '',
+    "Job Title" => isset($result_json_output->addresses[0]->custom_jobTitle) ? $result_json_output->addresses[0]->custom_jobTitle : '',
+    "SSO" => isset($result_json_output->id) ? $result_json_output->id : '',
+    "Email" => isset($result_json_output->custom_supplierEmail) ? $result_json_output->custom_supplierEmail : '',
+    "Phone" => isset($result_json_output->phoneNumbers['0']->value) ? $result_json_output->phoneNumbers['0']->value : '',
+    "Start Date" => isset($result_json_output->custom_startdate) ? $result_json_output->custom_startdate : '',
+    "End Date" => isset($result_json_output->custom_enddate) ? $result_json_output->custom_enddate : '',
+    "User Type" => isset($result_json_output->employeeType) ? $result_json_output->employeeType : '',
+    "Custom Location" => isset($result_json_output->custom_locationid) ? $result_json_output->custom_locationid : '',
+    "Custom AMS App Name" => isset($result_json_output->custom_amsApplicationName) ? $result_json_output->custom_amsApplicationName : '',
+    "Custom AMS App ID" => isset($result_json_output->custom_amsApplicationId) ? $result_json_output->custom_amsApplicationId : '',
+    "Custom Mail Type" => isset($result_json_output->custom_mailtype) ? $result_json_output->custom_mailtype : '',
+    "Manager" => isset($result_json_output->manager->custom_managerfullname) ? $result_json_output->manager->custom_managerfullname : '',
+    "Manager SSO" => isset($result_json_output->manager->managerId) ? $result_json_output->manager->managerId : '',
+
+    /*"Address" => isset($result_json_output->addresses[0]->custom_building.', '.$result_json_output->addresses[0]->streetAddress.', '.$result_json_output->addresses[0]->locality.', '.$result_json_output->addresses[0]->country.', '.$result_json_output->addresses[0]->region.', '.$result_json_output->addresses[0]->postalCode) ? $result_json_output->addresses[0]->custom_building.', '.$result_json_output->addresses[0]->streetAddress.', '.$result_json_output->addresses[0]->locality.', '.$result_json_output->addresses[0]->country.', '.$result_json_output->addresses[0]->region.', '.$result_json_output->addresses[0]->postalCode : '',*/
+  );
+	$var['contractor_details'] = $contractor_details;
+	return theme('submitted_task_details', $var);
+}
+/**
+ * Clear the data cached for another user
+ * Useful for clearing the approval notifications for a user which is dependent on others
+ * @param type $user_id
+ */
+function idm_notifications_clear_user_cache($user_id, $type='approval'){
+ //db_delete() doesnt support sub query. So using db_query
+  $query = "DELETE coc FROM ctools_object_cache coc
+            WHERE coc.sid IN (
+                SELECT sid FROM sessions s, users u
+                WHERE u.uid = s.uid AND u.name = '$user_id'
+            )";
+  if($type == 'approval'){
+    $query .= " AND (coc.name = 'approve_request' OR coc.name = 'approve_count')";
+  }elseif($type == 'mygroups'){
+    $query .= " AND coc.name = 'group_data_mygroups'";
+  }
+  if(!empty($user_id)){
+    db_query($query)->execute();
+  }
+}
+
+/**
+ * Callback for getting expiringgroups.
+ */
+function _idm_notifications_get_expiringgroups() {
+  global $user;
+
+  if(empty($user->name)){
+    return;
+  }
+  $expiringgroups_list = array();
+  //ctools_include('object-cache');
+  //idm_notifications_flush_caches();
+  $var = array('expiringgroups' => array(), 'expiringgroups_count' => 10);
+  $userid = empty($user->name) ? '' : $user->name;
+  $expiringgroups_list = _idm_groups_get_grouplist('mygroups', 'expirationdate', 'descending');
+  $expiringgroups_content = array();
+  $expiringgroups_gid_all = "";
+
+  $exp_date_all= "";
+  foreach($expiringgroups_list as $group_content) {
+	if(isset($group_content['id']) && ($group_content['expirationdate'] != "Never") &&(strtotime($group_content['expirationdate']) < idm_portal_strtotime('+'.RENEWAL_LISTING_PERIOD))){
+		$expiringgroups_content[] = $group_content;
+		$expiringgroups_gid_all .= $group_content['id'].',';
+        $exp_date_all .= $group_content['expirationdate'].',';
+	}
+  }
+  $expiringgroups_gid_all = rtrim($expiringgroups_gid_all,',');
+  $exp_date_all = rtrim($exp_date_all,',');
+  $var['expiringgroups_gid_all'] = $expiringgroups_gid_all;
+  $var['exp_date_all'] = $exp_date_all;
+  $var['expiringgroups_count'] = count($expiringgroups_content);
+  $var['expiringgroups'] = $expiringgroups_content;
+  $count_expiringgroups = ctools_object_cache_get('api', 'expiringgroups_count');
+  if($count_expiringgroups === NULL){
+    ctools_object_cache_set('api', 'expiringgroups_count', $var['expiringgroups_count']);
+  }
+  return theme('notifications_expiringgroups', $var);
+}

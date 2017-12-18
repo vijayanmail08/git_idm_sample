@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the IDM Webforms feature.
+ */
+
+include_once 'idm_webforms.features.inc';

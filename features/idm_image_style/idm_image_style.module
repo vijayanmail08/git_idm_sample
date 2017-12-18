@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the IDM Image Style feature.
+ */
+
+include_once 'idm_image_style.features.inc';

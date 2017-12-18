@@ -1,0 +1,13 @@
+<?php
+
+/**
+ * @file
+ * Install, update, and uninstall functions for the Rest Api module.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function rest_api_check_install() {
+  variable_set('rest_api_check_url', 'http://3.3.175.127:8080/idm-api/rest');
+}

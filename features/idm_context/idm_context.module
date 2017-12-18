@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the IDM Context feature.
+ */
+
+include_once 'idm_context.features.inc';

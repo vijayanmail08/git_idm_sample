@@ -1,0 +1,15 @@
+name = IDM Menus
+description = A feature for all the Menus
+core = 7.x
+package = IDM
+version = 7.x-1.0
+project = idm_menus
+dependencies[] = features
+dependencies[] = menu
+features[features_api][] = api:2
+features[menu_custom][] = main-menu
+features[menu_links][] = main-menu:<front>
+features[menu_links][] = main-menu:assets
+features[menu_links][] = main-menu:groups
+features[menu_links][] = main-menu:myworkers
+features[menu_links][] = main-menu:notifications

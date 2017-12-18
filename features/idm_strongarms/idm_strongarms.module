@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the IDM Strongarms feature.
+ */
+
+include_once 'idm_strongarms.features.inc';

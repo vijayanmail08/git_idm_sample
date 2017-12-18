@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the IDM Content Types feature.
+ */
+
+include_once 'idm_content_types.features.inc';

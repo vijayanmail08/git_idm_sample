@@ -1,0 +1,16 @@
+name = IDM Context
+core = 7.x
+package = IDM
+version = 7.x-1.0
+project = idm_context
+dependencies[] = context
+dependencies[] = ctools
+dependencies[] = idm_notifications
+dependencies[] = idm_portal
+dependencies[] = idm_profile
+dependencies[] = search
+features[context][] = homepage
+features[context][] = notifications
+features[context][] = sitewide
+features[ctools][] = context:context:3
+features[features_api][] = api:2

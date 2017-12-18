@@ -1,0 +1,3342 @@
+<?php
+
+/**
+ * Implementation of hook_menu().
+ */
+function idm_groups_menu() {
+  $items = array ();
+
+  //Legacy group
+  $items['legacygroups'] = array (
+    'title' => 'Legacy Groups',
+    'page callback' => 'legacy_list_groups',
+    'access arguments' => array('access idm profile'),
+    /*'menu_name' => 'main-menu', // This is the changed line.
+    'type' => MENU_NORMAL_ITEM,
+    'weight' => - 48*/
+    'type' => MENU_CALLBACK,
+  );
+
+  //Group menu
+  $items['groups'] = array (
+    'title' => 'Groups',
+    'page callback' => 'list_groups',
+    'access arguments' => array('access idm profile'),
+    'type' => MENU_CALLBACK,
+  );
+
+  //Group ajax call
+  $items['grouplist'] = array (
+    'page callback' => 'idm_groups_grouplist',
+    'page arguments' => array (1,2,3),
+    'access arguments' => array('access idm profile'),
+    'type' => MENU_CALLBACK,
+  );
+
+  //Group detail page
+  $items['group/%/%'] = array (
+    'title' => 'Group Detail',
+    'page callback' => 'idm_groups_get_group_detail',
+    'page arguments' => array (1, 2),
+    'access arguments' => array('access idm profile')
+  );
+
+  //Create group
+  $items['create/group'] = array (
+    'title' => 'Create Group',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array ('idm_groups_create_group'),
+    'access arguments' => array('access idm profile'),
+  );
+
+  //Edit/Modify group
+//  $items['edit-group/%'] = array (
+  $items['edit-group/%'] = array (
+    'title' => 'Edit/Modify group',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array (
+      'idm_groups_create_group',
+      1
+    ),
+    'access callback' => 'idm_groups_access',
+    'access arguments' => array(1),
+    //'access arguments' => array('access idm profile')
+  );
+
+  //Join group
+  $items['join/group/%/%'] = array (
+    'title' => 'Join Group',
+    'page callback' => 'idm_groups_join_group',
+    'page arguments' => array (2, 3),
+    'access arguments' => array('access idm profile'),
+  );
+
+  //Leave group
+  $items['leave/group/%/%'] = array (
+    'title' => 'Leave Group',
+    'page callback' => 'idm_groups_leave_group',
+    'page arguments' => array (2, 3),
+    'access arguments' => array('access idm profile'),
+  );
+
+  //Extend group
+  $items['extend/group/%/%/%'] = array (
+    'title' => 'Extend Group',
+    'page callback' => 'idm_groups_extend_group',
+    'page arguments' => array (2, 3, 4),
+    'access arguments' => array('access idm profile'),
+  );
+
+  //Terminate group
+  $items['terminate/group/%/%'] = array (
+    'title' => 'Terminate Group',
+    'page callback' => 'idm_groups_terminate_group',
+    'page arguments' => array (2, 3),
+    'access arguments' => array('access idm profile'),
+  );
+
+  //Transfer group
+  $items['transfer/group/%'] = array (
+    'title' => 'Transfer Group',
+    'page callback' => 'idm_groups_transfer_group',
+    'page arguments' => array (2),
+    'access arguments' => array('access idm profile'),
+  );
+
+  //Add group member
+  $items['add/group/member/%/%/%'] = array (
+    'title' => 'Add Group Member',
+    'page callback' => 'idm_groups_add_group_member',
+    'page arguments' => array (3, 4, 5),
+    'access arguments' => array('access idm profile'),
+  );
+
+  //Remove group member
+  $items['remove/group/member/%/%/%'] = array (
+    'title' => 'Remove Group Member',
+    'page callback' => 'idm_groups_remove_group_member',
+    'page arguments' => array (3, 4, 5),
+    'access arguments' => array('access idm profile'),
+  );
+
+  //Add group member
+  $items['add/group/manager/%/%/%'] = array (
+    'title' => 'Add Group Manager',
+    'page callback' => 'idm_groups_add_group_manager',
+    'page arguments' => array (3, 4, 5),
+    'access arguments' => array('access idm profile'),
+  );
+
+  //Remove group member
+  $items['remove/group/manager/%/%/%'] = array (
+    'title' => 'Remove Group Manager',
+    'page callback' => 'idm_groups_remove_group_manager',
+    'page arguments' => array (3, 4, 5),
+    'access arguments' => array('access idm profile'),
+  );
+
+  //Autocomplete groups
+  $items['autocomplete/groups'] = array(
+    'page callback'=> 'idm_groups_autocomplete_search',
+    'access arguments' => array('access idm profile'),
+  );
+
+  $items['autocomplete/groupmanager'] = array(
+    'page callback'=> 'idm_groups_manager_autocomplete',
+    'access arguments' => array('access idm profile'),
+  );
+
+  //Download groups report
+  $items['download_group/%'] = array (
+    'page callback' => 'idm_groups_download',
+    'page arguments' => array (1),
+    'access arguments' => array('access idm profile'),
+    'type' => MENU_CALLBACK,
+  );
+
+  //Download groups report
+  $items['download_group_members/%'] = array (
+    'page callback' => 'idm_groups_members_download',
+    'page arguments' => array (1),
+    'access arguments' => array('access idm profile'),
+    'type' => MENU_CALLBACK,
+  );
+
+  // Get manager details
+  $items['getmanager/%'] = array (
+    'title' => 'Get Manager Details',
+    'page callback' => 'idm_groups_get_manager_details',
+    'page arguments' => array (1),
+    'access arguments' => array('access idm profile'),
+  );
+
+  // Get usertype details
+  $items['getusertype/%'] = array (
+    'title' => 'Get User type Details',
+    'page callback' => 'idm_groups_get_usertype_details',
+    'page arguments' => array (1),
+    'access arguments' => array('access idm profile'),
+  );
+
+  // Check emails for the group
+  $items['checkgroupemail/%'] = array (
+    'title' => 'Check Group Email Id',
+    'page callback' => 'idm_groups_check_email_id',
+    'page arguments' => array (1),
+    'access arguments' => array('access idm profile'),
+  );
+
+  // Check display name for the group
+  $items['checkgroupdisplayname/%'] = array (
+    'title' => 'Check Group display name',
+    'page callback' => 'idm_groups_check_display_name',
+    'page arguments' => array (1),
+    'access arguments' => array('access idm profile'),
+  );
+
+  $items['groups/bulkop'] = array (
+    'title' => 'Groups Bulk Operations',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array ('idm_groups_bulk_operations_form'),
+    'access arguments' => array('administer idm groups'),
+    'file' => 'group.bulkoperations.inc'
+  );
+
+  // Groups Bulk Transfer Operation
+  $items['transfer-group-all/%/%'] = array (
+    'title' => 'Groups Bulk Transfer Operation',
+    'page callback' => array ('idm_groups_bulk_transfer_group_all'),
+    'page arguments' => array (1, 2),
+    'access arguments' => array('access idm profile'),
+    'file' => 'group.bulkoperations.inc'
+  );
+
+  // Groups Bulk Renew Operation
+  $items['renew-group-all/%/%'] = array (
+    'title' => 'Groups Bulk Renew Operation',
+    'page callback' => array ('idm_groups_bulk_renew_group_all'),
+    'page arguments' => array (1, 2),
+    'access arguments' => array('access idm profile'),
+    'file' => 'group.bulkoperations.inc'
+  );
+
+  // Groups Bulk Terminate Operation
+  $items['terminate-group-all/%'] = array (
+    'title' => 'Groups Bulk Terminate Operation',
+    'page callback' => array ('idm_groups_bulk_terminate_group_all'),
+    'page arguments' => array (1),
+    'access arguments' => array('access idm profile'),
+    'file' => 'group.bulkoperations.inc'
+  );
+
+  $items['upload_group_members'] = array (
+    'title' => 'Upload Group members',
+    'page callback' => 'idm_groups_group_member_upload',
+    'access arguments' => array('access idm profile'),
+  );
+
+  $items['mobile-renewgroup/%/%'] = array (
+    'title' => 'Renew Group',
+    'page callback' => 'idm_group_mobile_renew_group',
+    'page arguments' => array (1, 2),
+    'access arguments' => array('access idm profile')
+  );
+  $items['mobile-transfergroup/%/%'] = array (
+    'title' => 'Transfer Group',
+    'page callback' => 'idm_group_mobile_transfer_group',
+    'page arguments' => array (1, 2),
+    'access arguments' => array('access idm profile')
+  );
+  $items['mobile-terminategroup/%/%'] = array (
+    'title' => 'Terminate Group',
+    'page callback' => 'idm_group_mobile_terminate_group',
+    'page arguments' => array (1, 2),
+    'access arguments' => array('access idm profile')
+  );
+  $items['mobile-leavegroup/%/%'] = array (
+    'title' => 'Leave Group',
+    'page callback' => 'idm_group_mobile_leave_group',
+    'page arguments' => array (1, 2),
+    'access arguments' => array('access idm profile')
+  );
+
+  return $items;
+}
+
+/**
+ * Access Callback method
+ */
+function idm_groups_access($gid) {
+  /*
+  global $user;
+  $userid = empty($user->name) ? '' : $user->name;
+  $manager_sso_array = array();
+  $p = 0;
+  $gtype = 'DST';
+  //Fetch group info from API
+  $url = variable_get('rest_api_check_url').'/internal/groups';
+  $url_get = $url . '/' . $gid . '?type='.$gtype;
+  $result = _idm_portal_get_api_data($url_get);
+  $group_array = _idm_groups_format_groupdetail_info(json_decode($result->data));
+  foreach ($group_array['group_managers'] as $key=>$value) {
+    $manager_sso_array[$p] = !empty($value['manager_sso']) ? $value['manager_sso'] : '';
+    $p++;
+  }
+  if ((in_array($userid, $manager_sso_array)) || (in_array('Messaging Administrator', $user->roles))) {
+    return true;
+  } else {
+    return false;
+  }
+  */
+  global $user;
+  $manager_sso_array = array();
+  $p = 0;
+  $mygroup_content = _idm_groups_get_grouplist('mygroups','expirationdate','descending');
+  foreach($mygroup_content as $key_content=>$value_content) {
+    $manager_sso_array[$p] = !empty($value_content['id']) ? $value_content['id'] : '';
+    $p++;
+  }
+  if ((in_array($gid, $manager_sso_array)) || (in_array('Messaging Administrator', $user->roles))) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+/**
+*  Funtion to fetch group detail
+**/
+function idm_groups_get_group_detail($gtype,$gid) {
+  global $user;
+  $userid = empty($user->name) ? '' : $user->name;
+  $group_info = _idm_groups_get_group_info($gtype,$gid);
+  if (empty($group_info['group_managers']['group_display_name']) || empty($group_info['group_managers']['group_display_email'])) {
+  $var['group_mgr_count'] = count($group_info['group_managers']);
+  }
+  $var['group_member_count'] = count($group_info['group_members']);
+  $var['logged_in_sso'] =  $userid;
+  $logged_in_user_info = _idm_profile_get_user(trim($userid));
+  //variable initiation
+  $logged_in_user_info['preferred_name'] = !empty($logged_in_user_info['preferred_name']) ? $logged_in_user_info['preferred_name'] : '';
+  $logged_in_user_info['firstname'] = !empty($logged_in_user_info['firstname']) ? $logged_in_user_info['firstname'] : '';
+  $logged_in_user_info['lastname'] = !empty($logged_in_user_info['lastname']) ? $logged_in_user_info['lastname'] : '';
+
+  //$var['logged_in_display'] = !empty($logged_in_user_info['preferred_name']) ? $logged_in_user_info['preferred_name'].' '.$logged_in_user_info['lastname'] : $logged_in_user_info['firstname'].' '.$logged_in_user_info['lastname'];
+
+  if (!empty($logged_in_user_info['preferred_name'])) {
+    $var['logged_in_display'] = $logged_in_user_info['preferred_name'].' '.$logged_in_user_info['lastname'];
+  } else {
+    if (!empty($logged_in_user_info['firstname']) && !empty($logged_in_user_info['lastname'])) {
+      $var['logged_in_display'] = $logged_in_user_info['firstname'].' '.$logged_in_user_info['lastname'];
+    } else {
+      $var['logged_in_display'] = trim($logged_in_user_info['displayname']);
+    }
+  }
+
+  $manager_sso_array = array();
+  $p = 0;
+  /*
+  foreach ($group_info['group_managers'] as $key=>$value) {
+    $manager_sso_array[$p] = !empty($value['manager_sso']) ? $value['manager_sso'] : '';
+    $p++;
+  }*/
+  $group_content = _idm_groups_get_grouplist('mygroups','expirationdate','descending');
+  foreach($group_content as $key_content=>$value_content) {
+    $manager_sso_array[$p] = !empty($value_content['id']) ? $value_content['id'] : '';
+    $p++;
+  }
+  if ((in_array($gid, $manager_sso_array)) || (in_array('Messaging Administrator', $user->roles))) {
+    $var['manager_flag'] = 1;
+  }
+  $var['group_info'] = $group_info;
+  return theme('group_detail', $var);
+}
+
+/**
+* Function to get group details from API
+**/
+function _idm_groups_get_group_info($gtype,$gid) {
+  if(empty($gid)) return;
+
+  //Fetch group info from the cache
+  $group_info = ctools_object_cache_get('api', 'group_info_'.$gid);
+  if(!empty($group_info)){
+    return $group_info;
+  }
+  //Fetch group info from API if cache is empty
+  $url = variable_get('rest_api_check_url').'/internal/groups';
+  $url_get = $url . '/' . $gid . '?type='.$gtype;
+  $result = _idm_portal_get_api_data($url_get);
+  $group_array = _idm_groups_format_groupdetail_info(json_decode($result->data));
+  ctools_object_cache_set('api', 'group_info_'.$gid, $group_array);
+  return $group_array;
+}
+
+/**
+* Funtion to format the group details from JSON object
+**/
+function _idm_groups_format_groupdetail_info($data) {
+	//echo '<pre>';
+	//print_r($data);
+	//exit;
+  global $user;
+  $groupinfo = array();
+  $groupinfo['is_member'] = FALSE;
+  $groupinfo['group_members'] = $groupinfo['group_managers'] = $groupinfo['group_managers_person'] = $groupinfo['group_managers_group'] = array();
+  if(!empty($data->id)){
+    $groupinfo['id'] = $data->id;
+  }
+  if(!empty($data->type)){
+    $groupinfo['type'] = $data->type;
+  }
+  if(!empty($data->displayName)){
+    $groupinfo['displayName'] =  $data->displayName;
+    $groupinfo['title'] =  $data->displayName;
+  }
+  if(!empty($data->description)){
+    $groupinfo['description'] = $data->description;
+  }
+  if(!empty($data->emails)){
+     foreach($data->emails as $email){
+      $groupinfo['email'][$email->type] = $email->value;
+    }
+  }
+  if(!empty($data->alternateemails)){
+	  foreach ($data->alternateemails as $key=>$value) {
+	    $groupinfo['alternateemails'][$key] = $value->value;
+	  }
+  }
+  if(!empty($data->membershippolicy)){
+    $groupinfo['membershippolicy'] = $data->membershippolicy;
+  }
+  if(!empty($data->hidefromaddresslists)){
+    $groupinfo['hidefromaddresslists'] = $data->hidefromaddresslists;
+  }
+  if(!empty($data->securitygroup)){
+    $groupinfo['securitygroup'] = $data->securitygroup;
+  }
+  if(!empty($data->comments)){
+    $groupinfo['comments'] = $data->comments;
+  } else {
+    $groupinfo['comments'] = '';
+  }
+  if(!empty($data->expirationdate)){
+    $groupinfo['expirationdate'] = date('m/d/Y', strtotime($data->expirationdate));
+  }
+  if(!empty($data->expiration)){
+    $groupinfo['expiration'] = $data->expiration;
+  }
+  if(!empty($data->groupcreatedon)){
+    $groupinfo['groupcreatedon'] = date('m/d/Y', strtotime($data->groupcreatedon));
+  }
+  if(!empty($data->owners[0]->primary)) {
+    if($data->owners[0]->primary == 1){
+	    $primarymanager_sso = substr($data->owners[0]->value, 4, 9);
+      $groupinfo['primarymanager_pm_sso'] = $primarymanager_sso;
+      $groupinfo['primarymanager'] = $data->owners[0]->display.' ('.$primarymanager_sso.')';
+	  }
+  }
+  //echo '<pre>owner';print_r($data->owners);
+  if(!empty($data->owners)) {
+    foreach ($data->owners as $key=>$value) {
+      $each_owners_value = !empty($value->value) ? $value->value : '';
+	    $pos_g = strpos($each_owners_value, ',ou=Groups,dc=tfayd,dc=com');
+      if ($pos_g === false) {//group id
+        //echo "The string '$findme' was not found in the string '$mystring'";
+      } else {
+		      $owners_display = !empty($data->owners[0]->display) ? $data->owners[0]->display : '';
+          $owners_email = !empty($data->owners[0]->emails[0]->value) ? $data->owners[0]->emails[0]->value : '';
+		      $owners_value = !empty($data->owners[0]->value) ? $data->owners[0]->value : '';
+
+          if (trim($value->value) == trim($owners_value)) {
+            if (!isset($value->primary)) {
+              $groupinfo['group_managers_group'][$key]['email'] = isset($value->emails[0]->value) ? $value->emails[0]->value : '' ;
+              $groupinfo['group_managers_group'][$key]['display'] = isset($value->display) ? $value->display : '' ;
+              $manager_sso = substr($value->value, 0, $pos_g);
+              //$groupinfo['group_managers_group'][$key]['group_display_email'] = isset($value->emails[0]->value) ? $value->emails[0]->value : '' ;
+              //$groupinfo['group_managers_group'][$key]['group_display_name'] = isset($value->display) ? $value->display : '' ;
+              $manager_sso = substr($value->value, 0, $pos_g);
+              $manager_sso = ltrim($manager_sso, 'cn=');
+              $groupinfo['group_managers_group'][$key]['manager_sso'] = $manager_sso;
+              $groupinfo['group_managers_group'][$key]['primary'] = isset($data->owners[0]->primary) ? 1 : 0;
+            }
+			    } else {
+            $groupinfo['group_managers_group'][$key]['email'] = isset($value->emails[0]->value) ? $value->emails[0]->value : '' ;
+            $groupinfo['group_managers_group'][$key]['display'] = isset($value->display) ? $value->display : '' ;
+            $manager_sso = substr($value->value, 0, $pos_g);
+            //$groupinfo['group_managers_group'][$key]['group_display_email'] = isset($value->emails[0]->value) ? $value->emails[0]->value : '' ;
+            //$groupinfo['group_managers_group'][$key]['group_display_name'] = isset($value->display) ? $value->display : '' ;
+            $manager_sso = substr($value->value, 0, $pos_g);
+            $manager_sso = ltrim($manager_sso, 'cn=');
+            $groupinfo['group_managers_group'][$key]['manager_sso'] = $manager_sso;
+            $groupinfo['group_managers_group'][$key]['primary'] = isset($value->primary) ? 1 : 0;
+			    }
+      }
+
+      $pos_u = strpos($each_owners_value, ',ou=worker,dc=tfayd,dc=com');
+      if ($pos_u === false) {//user id
+        //echo "The string '$findme' was not found in the string '$mystring'";
+      } else {
+          //$owners_group_name = (!empty($value->value) && !empty($value->display)) ? $value->display : '';
+          if (empty($value->firstname ) && empty($value->lastname ) && empty($value->preferredname)) {
+            //variable initiation
+            /*
+            $groupinfo['group_managers_person'][$key]['group_display_name'] = !empty($value->display) ? $value->display : '';
+            $owners_group_email = !empty($value->emails[0]->value) ? $value->emails[0]->value : '';
+            $groupinfo['group_managers_person'][$key]['group_display_email'] = $owners_group_email;
+            */
+          }
+
+          $owners_firstname = !empty($data->owners[0]->firstname) ? $data->owners[0]->firstname : '';
+          $owners_lastname = !empty($data->owners[0]->lastname) ? $data->owners[0]->lastname : '';
+          $owners_preferredname = !empty($data->owners[0]->preferredname) ? $data->owners[0]->preferredname : '';
+          $owners_value = !empty($data->owners[0]->value) ? $data->owners[0]->value : '';
+
+          if (trim($value->value) == trim($owners_value)) {
+            if (!isset($value->primary)) {
+              $groupinfo['group_managers_person'][$key]['firstname'] = isset($value->firstname) ? $value->firstname : '' ;
+              $groupinfo['group_managers_person'][$key]['lastname'] = isset($value->lastname) ? $value->lastname : '';
+              $groupinfo['group_managers_person'][$key]['preferredname_display'] = !empty($value->preferredname) ? $value->preferredname." ".$value->lastname : $value->firstname." ".$value->lastname;
+              $groupinfo['group_managers_person'][$key]['primary'] = isset($data->owners[0]->primary) ? 1 : 0;
+              $manager_sso = substr($value->value, 0, $pos_u);
+              $manager_sso = ltrim($manager_sso, 'uid=');
+              $groupinfo['group_managers_person'][$key]['manager_sso'] = $manager_sso;
+            }
+			    } else {
+            $groupinfo['group_managers_person'][$key]['firstname'] = isset($value->firstname) ? $value->firstname : '' ;
+            $groupinfo['group_managers_person'][$key]['lastname'] = isset($value->lastname) ? $value->lastname : '';
+            $groupinfo['group_managers_person'][$key]['preferredname_display'] = !empty($value->preferredname) ? $value->preferredname." ".$value->lastname : $value->firstname." ".$value->lastname;
+            $groupinfo['group_managers_person'][$key]['primary'] = isset($value->primary) ? 1 : 0;
+            $manager_sso = substr($value->value, 0, $pos_u);
+            $manager_sso = ltrim($manager_sso, 'uid=');
+            $groupinfo['group_managers_person'][$key]['manager_sso'] = $manager_sso;
+			    }
+      }
+    }
+    $groupinfo['group_managers'] = array_merge($groupinfo['group_managers_group'], $groupinfo['group_managers_person']);
+    //echo '<pre>person';
+    usort($groupinfo['group_managers'], 'custom_manager_sort');
+    //print_r($groupinfo['group_managers']);
+  }
+
+  if(!empty($data->members)){
+    foreach ($data->members as $key=>$value) {
+        $pos_u = strpos($value->value, ',ou=worker,dc=tfayd,dc=com');
+        if ($pos_u === false) {//user id
+          //echo "The string '$findme' was not found in the string '$mystring'";
+        } else {
+          $member_sso = substr($value->value, 0, $pos_u);
+          $member_sso = ltrim($member_sso, 'uid=');
+          $groupinfo['group_members'][$key]['sso'] = $member_sso;
+          $groupinfo['group_members'][$key]['first_name'] = isset($value->firstname)? $value->firstname:'';
+          $groupinfo['group_members'][$key]['last_name'] = isset($value->lastname)? $value->lastname:'';
+          $firstname = $groupinfo['group_members'][$key]['first_name'];
+          $lastname =  $groupinfo['group_members'][$key]['last_name'];
+          $groupinfo['group_members'][$key]['display_name'] = !empty($value->preferredname) ? $value->preferredname." ".$lastname : $firstname." ".$lastname;
+          $groupinfo['group_members'][$key]['member_email'] = isset($value->emails['0']->value)? $value->emails['0']->value: '';
+          if($member_sso == $user->name){
+            $groupinfo['is_member'] = TRUE;
+          }
+        }
+        $pos_g = strpos($value->value, ',ou=Groups,dc=tfayd,dc=com');
+        if ($pos_g === false) {//group id
+          //echo "The string '$findme' was not found in the string '$mystring'";
+        } else {
+          $groupinfo['group_members'][$key]['members_group_email'] = isset($value->emails[0]->value) ? $value->emails[0]->value : '' ;
+          $groupinfo['group_members'][$key]['members_display'] = isset($value->display) ? $value->display : '' ;
+          $member_sso = substr($value->value, 0, $pos_g);
+          $member_sso = ltrim($member_sso, 'cn=');
+          $groupinfo['group_members'][$key]['sso'] = $member_sso;
+        }
+    }
+  }
+
+  if(!empty($data->groupcreator)){
+    $groupinfo['group_creator_firstname'] = empty($data->groupcreator[0]->firstname) ? '' : $data->groupcreator[0]->firstname;
+    $groupinfo['group_creator_lastname'] = empty($data->groupcreator[0]->lastname) ? '' : $data->groupcreator[0]->lastname;
+    $groupinfo['group_creator_preferredname'] = empty($data->groupcreator[0]->preferredname) ? '' : $data->groupcreator[0]->preferredname;
+    $groupinfo['group_creator_preferredname_display'] = !empty($groupinfo['group_creator_preferredname']) ? $groupinfo['group_creator_preferredname'].' '.$groupinfo['group_creator_lastname'] : $groupinfo['group_creator_firstname'].' '.$groupinfo['group_creator_lastname'];
+    $str_pos = strpos($data->groupcreator[0]->value, ',ou=worker,dc=tfayd,dc=com');
+      if ($str_pos === false) {
+        //echo "The string '$findme' was not found in the string '$mystring'";
+      } else {
+            $creator_sso = substr($data->groupcreator[0]->value, 0, $str_pos);
+            $creator_sso = ltrim($creator_sso, 'uid=');
+            $groupinfo['group_creator_sso'] = $creator_sso;
+        }
+  }
+
+  if(!empty($data->allowedtosend)){
+    foreach ($data->allowedtosend as $key=>$value) {
+        $pos_u = strpos($value->value, ',ou=worker,dc=tfayd,dc=com');
+        if ($pos_u === false) {//user id
+          //echo "The string '$findme' was not found in the string '$mystring'";
+        } else {
+          $manager_sso = substr($value->value, 0, $pos_u);
+          $manager_sso = ltrim($manager_sso, 'uid=');
+          $groupinfo['group_allowedtosend'][$key]['allowedtosend_sso'] = $manager_sso;
+          //$groupinfo['group_allowedtosend'][$key]['first_name'] = isset($data->allowedtosend[0]->firstname) ? $data->allowedtosend[0]->firstname :'';
+          //$groupinfo['group_allowedtosend'][$key]['last_name'] = isset($data->allowedtosend[0]->lastname)? $data->allowedtosend[0]->lastname:'';
+          $groupinfo['group_allowedtosend'][$key]['first_name'] = isset($value->firstname)? $value->firstname:'';
+          $groupinfo['group_allowedtosend'][$key]['last_name'] = isset($value->lastname)? $value->lastname:'';
+          $firstname = $groupinfo['group_allowedtosend'][$key]['first_name'];
+          $lastname =  $groupinfo['group_allowedtosend'][$key]['last_name'];
+          $groupinfo['group_allowedtosend'][$key]['display_name'] = !empty($value->preferredname) ? $value->preferredname." ".$lastname : $firstname." ".$lastname;
+          //$groupinfo['group_allowedtosend'][$key]['last_name'] = $data->allowedtosend[0]->display;
+          //$groupinfo['group_allowedtosend'][$key]['last_name'] = $data->allowedtosend[0]->lastname;
+        }
+        $pos_g = strpos($value->value, ',ou=Groups,dc=tfayd,dc=com');
+        if ($pos_g === false) {//group id
+          //echo "The string '$findme' was not found in the string '$mystring'";
+        } else {
+          $groupinfo['group_allowedtosend'][$key]['allowedtosend_group_email'] = isset($value->emails[0]->value) ? $value->emails[0]->value : '' ;
+          $groupinfo['group_allowedtosend'][$key]['allowedtosend_display'] = isset($value->display) ? $value->display : '' ;
+          $manager_sso = substr($value->value, 0, $pos_g);
+          $manager_sso = ltrim($manager_sso, 'cn=');
+          $groupinfo['group_allowedtosend'][$key]['allowedtosend_sso'] = $manager_sso;
+          //To be changed below post API changes
+          //$groupinfo['group_allowedtosend'][$key]['allowedtosend_display_name'] = !empty($value->display) ? $value->display : '';
+          //$allowedtosend_group_email = !empty($value->emails[0]->value) ? $value->emails[0]->value : '';
+          //$groupinfo['group_allowedtosend'][$key]['allowedtosend_group_email'] = $allowedtosend_group_email;
+          //$groupinfo['group_allowedtosend'][$key]['allowedtosend_email'] = isset($value->emails[0]->value) ? $value->emails[0]->value : '' ;
+          //$groupinfo['group_allowedtosend'][$key]['allowedtosend_display'] = isset($value->display) ? $value->display : '' ;
+        }
+    }
+  }
+  return $groupinfo;
+}
+
+/**
+ * Method for sorting Managers by primary
+ */
+function custom_manager_sort($a, $b)
+{
+    if ($a['primary'] < $b['primary'])
+        return 1;
+    elseif ($a['primary'] == $b['primary'])
+        return 0;
+    else
+        return -1;
+}
+
+/**
+ * Callback for legacy groups
+ */
+function legacy_list_groups() {
+	$external_url = 'http://iam.inbcu.com/idm/NBC_Groups/MyGroup/SelfGroupList.jsp';
+	drupal_goto($external_url, array('external' => TRUE));
+}
+
+/**
+ * Callback for groups
+ */
+function list_groups() {
+  if(isset($_SESSION['legacy'])) {
+    $external_url = variable_get('idm_waveset_groups_main_page_url','https://sso.stg.inbcu.com/nbcucentral/app/pwchange.jsp');
+    drupal_goto($external_url, array('external' => TRUE));
+  } else {
+    drupal_add_library('chosen', 'chosen', TRUE);
+    $content['info'] = array (
+      '#type' => 'markup',
+      '#markup' => get_groups(),
+      '#prefix' => '<div id="idm_groups">',
+      '#suffix' => '</div>'
+    );
+    return $content;
+  }
+}
+
+/**
+ * Callback for getting groups.
+ */
+function get_groups() {
+  global $user;
+  $userid = empty($user->name) ? '' : $user->name;
+  //Example userid
+  //$userid = '206046032';
+
+  $var['filterby'] = 'mymemberships';
+  $mygroups_content = _idm_groups_get_grouplist('mygroups', 'expirationdate', 'descending');
+  $var['mygroups_count'] = isset($mygroups_content['totalResults']) ? $mygroups_content['totalResults'] : 0;
+  $mymemberships_content = _idm_groups_get_grouplist('mymemberships', 'expirationdate', 'descending');
+  $var['mymemberships_count'] = isset($mymemberships_content['totalResults']) ? $mymemberships_content['totalResults'] : 0;
+//  $var['group'] = $mymemberships_content;
+  $var['group'] = $mygroups_content;
+  //Sample gid for the time being
+  $gid = 'g00191047';
+  $var['group_manager_lookup_field'] = idm_profile_get_manager_lookup_field($userid, 'edit-transfer', 'autocomplete/groupmanager');
+  $var['group_search_field'] = idm_groups_get_group_search_field($gid);
+  return theme('groups', $var);
+}
+
+/**
+ * Implementing hook_theme().
+ */
+function idm_groups_theme() {
+  $themes = array (
+    'groups' => array (
+      'template' => 'groups',
+      'variables' => array (
+        'vars' => array (
+          ''
+        )
+      )
+    ),
+    'group_detail' => array (
+      'template' => 'group_detail',
+      'variables' => array (
+        'vars' => array (
+          ''
+        )
+      )
+    ),
+    'edit_group' => array (
+      'template' => 'edit_group',
+      'render element' => 'form'
+     ),
+    'renewgroup_mobile' => array (
+      'template' => 'renewgroup_mobile',
+      'variables' => array (
+        'vars' => array (
+        ''
+        )
+      )
+    ),
+    'transfergroup_mobile' => array (
+      'template' => 'transfergroup_mobile',
+      'variables' => array (
+        'vars' => array (
+          ''
+        )
+      )
+    ),
+    'terminategroup_mobile' => array (
+      'template' => 'terminategroup_mobile',
+      'variables' => array (
+        'vars' => array (
+          ''
+        )
+      )
+    ),
+    'leavegroup_mobile' => array (
+      'template' => 'leavegroup_mobile',
+      'variables' => array (
+        'vars' => array (
+          ''
+        )
+      )
+    )
+  );
+  return $themes;
+}
+
+/**
+ * Callback for getting groups through ajax.
+ */
+function idm_groups_grouplist($fetchType = 'mygroups', $sortBy = 'expirationdate', $sortOrder = 'descending') {
+  global $user;
+  $userid = empty($user->name) ? '' : $user->name;
+  //Example userid
+  //$userid = '206046032';
+  $var = array();
+  $var['mymemberships_count'] = 18;
+  $var['mygroups_count'] = 12;
+  $var['filterby'] = $fetchType;
+  $group_content = _idm_groups_get_grouplist($fetchType, $sortBy, $sortOrder);
+  //echo 'countt'.$var['totalResults'] = isset($group_content['totalResults']) ? $group_content['totalResults'] : 0;
+  $var['group'] = $group_content;
+  //Sample gid for the time being
+  $gid = 'g00191047';
+  $var['group_manager_lookup_field'] = idm_profile_get_manager_lookup_field($userid);
+  $var['group_search_field'] = idm_groups_get_group_search_field($gid);
+  return theme('groups', $var);
+}
+
+/**
+ * Callback for getting groups listing.
+ */
+function _idm_groups_get_grouplist($fetchType, $sortBy, $sortOrder) {
+  global $user;
+  $userid = empty($user->name) ? '' : $user->name;
+  if(empty($userid)){
+    return;
+  }
+  //Example userid
+  //$userid = '206046032';
+
+  //Get the data from ctools cache
+  ctools_include('object-cache');
+  $group_data = ctools_object_cache_get('api', 'group_data_'.$fetchType);
+  if($group_data !== NULL){
+    return $group_data;
+  }
+
+  //Get the data from API if ctools cache is empty
+  //URL bulding
+  $url = variable_get('rest_api_check_url').'/internal/groups';
+  if ($fetchType == 'mygroups') {
+      $sort_filter = '&sortBy='.$sortBy.'&sortOrder='.$sortOrder;
+      $filter = rawurlencode('type eq DST and owners.value eq '.$userid).'&attributes=id,type,displayName,description,expirationdate,membershippolicy,memberscount,members.firstname,members.preferredname,members.lastname,members.mail,members.displayname,owners'.$sort_filter;
+  } else if ($fetchType == 'mymemberships') {
+      $sort_filter = '&sortBy='.$sortBy.'&sortOrder='.$sortOrder;
+      $filter = rawurlencode('type eq DST and members.value eq '.$userid).'&attributes=id,type,displayName,description,expirationdate,membershippolicy,memberscount,members.firstname,members.preferredname,members.lastname,members.mail,members.displayname,owners'.$sort_filter;
+  } else if ($fetchType == 'expiringgroups') {
+      $sort_filter = '&sortBy='.$sortBy.'&sortOrder='.$sortOrder;
+      $filter = rawurlencode('type eq DST and owners.value eq '.$userid).'&attributes=id,type,displayName,description,expirationdate,membershippolicy,memberscount,members.firstname,members.preferredname,members.lastname,members.mail,members.displayname,owners'.$sort_filter;
+  } else {
+      //to fetch allgroups
+      //$sort_filter = '&sortBy='.$sortBy.'&sortOrder='.$sortOrder;
+      //$filter = rawurlencode('type eq DST and owners.value eq '.$userType).$sort_filter;
+  }
+  $url_get = $url . '/?filter='.$filter;
+  $result = _idm_portal_get_api_data($url_get);
+  $return = _idm_groups_format_grouplist_info(json_decode($result->data),$fetchType);
+
+  //Set the data into ctools cache
+  ctools_object_cache_set('api', 'group_data_'.$fetchType, $return);
+  return $return;
+}
+
+/**
+ * Callback to fetch and format groups listing.
+ */
+function _idm_groups_format_grouplist_info($data,$fetchType) {
+  $groupinfo = array();
+
+  //Fetch group count
+  if (isset($data->totalResults)) {
+        $groupinfo['totalResults'] = $data->totalResults;
+  }
+
+  //Format group fields
+  if (isset($data->Resources)) {
+    foreach($data->Resources as $key=>$value) {
+      //group-id
+      if(!empty($value->id)){
+        $groupinfo[$key]['id'] = $value->id;
+      }
+      if(!empty($value->type)){
+        $groupinfo[$key]['type'] = $value->type;
+      }else{
+        $groupinfo[$key]['type'] = "DST";
+      }
+      //group-name
+      if(!empty($value->displayName)){
+        //$groupinfo[$key]['name'] = ltrim($value->displayName,'@');
+        $groupinfo[$key]['name'] = $value->displayName;
+      }
+      //group-description
+      if(!empty($value->description)){
+          $groupinfo[$key]['description'] = $value->description;
+      }
+      //group-memberscount
+      if(!empty($value->memberscount)){
+        $groupinfo[$key]['memberscount'] = $value->memberscount;
+      } else {
+        $groupinfo[$key]['memberscount'] = 0;
+      }
+      //group-managername
+      $groupinfo[$key]['manager'] = '';
+      if ((!empty($value->owners[0]->primary)) and ($value->owners[0]->primary == 1)) {
+        $pos = strpos($value->owners[0]->value, ',ou=worker,dc=tfayd,dc=com');
+        if ($pos === false) {
+          //echo "The string '$findme' was not found in the string '$mystring'";
+          //now group case
+          $pos_g = strpos($value->owners[0]->value, ',ou=Groups,dc=tfayd,dc=com');
+          if ($pos_g === false) {
+          //echo "The string '$findme' was not found in the string '$mystring'";
+            $groupinfo[$key]['manager'] = 'none';
+          } else {//group case
+            if(!empty($value->owners[0]->display)){
+              $groupinfo[$key]['manager'] = $value->owners[0]->display;
+            } else {
+              $groupinfo[$key]['manager'] = 'none';
+            }
+            $manager_sso = substr($value->owners[0]->value, 0, $pos_g);
+            $manager_sso = ltrim($manager_sso, 'cn=');
+            $groupinfo[$key]['manager_sso'] = $manager_sso;
+          }
+        } else {//user case
+          if(!empty($value->owners[0]->firstname)){
+            $manager_firstname = $value->owners[0]->firstname;
+          } else {
+            $manager_firstname = '';
+          }
+          if(!empty($value->owners[0]->lastname)){
+            $manager_lastname = $value->owners[0]->lastname;
+          } else {
+            $manager_lastname = '';
+          }
+          if(!empty($value->owners[0]->preferredname)){
+            $manager_preferredname = $value->owners[0]->preferredname;
+          } else {
+            $manager_preferredname = '';
+          }
+          if(!empty($value->owners[0]->preferredname)) {
+            $groupinfo[$key]['manager'] = $manager_preferredname.' '.$manager_lastname;
+          } else {
+            $groupinfo[$key]['manager'] = $manager_firstname.' '.$manager_lastname;
+          }
+          if(empty($manager_firstname) && empty($manager_lastname) && empty($manager_preferredname)){
+            $groupinfo[$key]['manager'] = 'none';
+          }
+          $manager_sso = substr($value->owners[0]->value, 0, $pos);
+          $manager_sso = ltrim($manager_sso, 'uid=');
+          //$manager_sso = substr($manager_sso, -8);
+          $groupinfo[$key]['manager_sso'] = $manager_sso;
+        }
+      } else {
+        $groupinfo[$key]['manager'] = 'none';
+      }
+
+      //group-expiratationdate and group-status
+      if(!empty($value->expirationdate)){
+        $groupinfo[$key]['expirationdate'] = date('m/d/Y', strtotime($value->expirationdate));
+        //group-status
+        /*if (strtotime(date('Y-m-d')) > strtotime(date('Y-m-d', strtotime($value->expirationdate)))) {
+          $groupinfo[$key]['status'] = 'lock';
+        } else {
+          $groupinfo[$key]['status'] = 'eye';
+        }*/
+      } else {
+        $groupinfo[$key]['expirationdate'] = 'Never';
+      }
+
+      if ($fetchType == 'mygroups') {
+          $groupinfo[$key]['buttontext'] = 'Edit';
+          $groupinfo[$key]['checkboxflag'] = '0';
+      } elseif ($fetchType == 'expiringgroups') {
+          $groupinfo[$key]['buttontext'] = 'Renew';
+          $groupinfo[$key]['checkboxflag'] = '1';
+      } else {
+          $groupinfo[$key]['buttontext'] = 'Leave';
+          $groupinfo[$key]['checkboxflag'] = '1';
+      }
+      $groupinfo[$key]['status'] = (isset($value->membershippolicy) && strtolower($value->membershippolicy) == 'private') ? 'lock' : 'eye';
+    }
+  }
+  return $groupinfo;
+}
+
+/**
+ * Callback function to join a group
+ */
+function idm_groups_join_group($gtype,$gid) {
+  _idm_groups_operation_group($gtype, $gid, 'add');
+}
+
+/**
+ * Callback function to leave a group
+ */
+function idm_groups_leave_group($gtype,$gid) {
+  _idm_groups_operation_group($gtype, $gid, 'remove');
+}
+
+function _idm_groups_operation_group($gtype, $gid, $operation) {
+  if(empty($gid)) return;
+
+  global $user;
+  $userid = empty($user->name) ? '' : $user->name;
+
+  //group_array require to create group_json
+  //$group_array['schemas'][] = 'urn:scim:schemas:core:1.0';
+  $group_array['requestor'] = $userid;
+  $group_array['type'] = $gtype;
+  $group_array['id'] = $gid;
+  $member = array();
+  $member['value'] = 'uid='.$userid.',ou=worker,dc=tfayd,dc=com';
+  $member['op'] = $operation;
+  $group_array['members'][] = $member;
+
+  //group_json
+  $group_json = json_encode($group_array);
+
+  //URL: the request to be sent to
+  $url  = variable_get('rest_api_check_url', 'http://3.3.175.127:8080/idm-api/rest').'/internal/groups/'.$gid;
+  //$url .= $gid . '?type='.$gtype;
+
+  //Sending the request
+  $method = 'PUT';
+  $result = idm_profile_execute_curl($url, $group_json, $method);
+  $result_json = json_decode($result);
+  if ($operation == 'add') {
+    if(isset($result_json->custom_transactionId)){  //approval needed
+      $managers = idm_groups_get_groupmanagers($gid, $gtype);
+      foreach($managers AS $manager){
+        idm_notifications_clear_user_cache($manager);
+      }
+      $output .= '<div class="profile-alert-actions-msg"><img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">Your Group request has been sent for approval to Group Managers</div>';
+      print $output;
+    } elseif($result_json->op_status == SUCCESS) {  //No approval needed
+      print 'success';
+      ctools_object_cache_clear('api', 'group_data_mymemberships');
+      ctools_object_cache_clear('api', 'group_info_'.$gid);
+	  } else {
+      $output .= '<div class="error_request-msg"><img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">Error occurred during the operation. Please contact the <a href="mailto:'.variable_get('idm_contact_emailid','identityservicessupportIDM@nbcuni.com').'">IdM Support Team</a> for assistance.</div>';
+      //$output .= '<div class="error_request-msg"><img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">Error occurred during the operation. Please contact the <a href="mailto:identityservicessupportIDM@nbcuni.com">IdM Support Team</a> for assistance.<br> DEBUG Info<br>'.$result_json->errorMessage.'</div>';
+      print $output;
+    }
+  } else {
+    //Output
+    $output = '';
+    if($result_json->op_status == SUCCESS || isset($result_json->custom_transactionId)) {
+      //drupal_set_message('<img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">'.t('You have left the group.'));
+      //drupal_set_message('<img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">'.t('You have left group !gname.', array('!gname' => $gid)));
+      print 'success';
+      ctools_object_cache_clear('api', 'group_data_mymemberships');
+      ctools_object_cache_clear('api', 'group_info_'.$gid);
+    } else {
+      $output .= '<div class="error_request-msg"><img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">Error occurred during the operation. Please contact the <a href="mailto:'.variable_get('idm_contact_emailid','identityservicessupportIDM@nbcuni.com').'">IdM Support Team</a> for assistance.</div>';
+      //$output .= '<div class="error_request-msg"><img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">Error occurred during the operation. Please contact the <a href="mailto:identityservicessupportIDM@nbcuni.com">IdM Support Team</a> for assistance.<br> DEBUG Info<br>'.$result_json->errorMessage.'</div>';
+      print $output;
+    }
+  }
+}
+
+
+/**
+ * Callback function to leave a group
+ */
+function idm_groups_leave_group_old($gtype,$gid) {
+  $group_array = _idm_groups_get_group_info($gtype,$gid);
+  //$requestor = $group_array['displayName'];
+  //echo '<pre>';
+  //print_r($group_array);
+
+  //JSON preparation for values to be send along with request
+  $group = new stdClass();
+  $group->schemas = array (
+    'urn:scim:schemas:core:1.0'
+  );
+  $group->id = $gid;
+  $group->displayName = $group_array['displayName'];
+  $group->description = $group_array['description'];
+  $group->emails['value'] = $group_array['emails'];
+  $group->emails['type'] = 'primary';
+  $group->membershippolicy = $group_array['membershippolicy'];
+  $group->expiration = $group_array['expiration'];
+  $group->expirationdate = $group_array['expirationdate'];
+  $group->hidemembership = $group_array['hidemembership'];
+  $group->hidefromaddresslists = $group_array['hidefromaddresslists'];
+  $group->type = $group_array['type'];
+  $group->securitygroup = $group_array['securitygroup'];
+  $group->comments = $group_array['comments'];
+  $group->organizationid = $group_array['organizationid'];
+  $group->groupcreator = $group_array['groupcreator'];
+  $group->allowedtosend[] = $group_array['allowedtosend'];
+  $group->owners[] = $group_array['owners'];
+  $group->alternateemails['value'] = $group_array['alternateemails'];
+  $group->ou = $group_array['ou'];
+  $group->orgsegmentid = $group_array['orgsegmentid'];
+  echo 'To be sent<pre>';
+  print_r($group);
+  $group_json = json_encode($group);
+  /*
+  $user_info_array['schemas'][] = 'urn:scim:schemas:core:1.0';
+  if(isset($form_state['values']['preferred-name'])){
+    $user_info_array['custom_preferredName'] = $form_state['values']['preferred-name'];
+  }
+  $user_info_array['custom_locationid'] = $form_state['values']['location_id'];
+  if (!empty($form_state['values']['personal_email'])) {
+    $user_info_array['custom_supplierEmail'] =  $form_state['values']['personal_email'];
+  }
+  $user_info_json = json_encode($user_info_array);
+  */
+  //URL: the request to be sent to
+  $url  = variable_get('rest_api_check_url', 'http://3.3.175.127:8080/idm-api/rest').'/internal/groups/'.$gid;
+  //$url .= $gid . '?type='.$gtype;
+
+  //Sending the request
+  $method = 'PUT';
+  $result = idm_profile_execute_curl($url, $group_json, $method);
+  $result_json = json_decode($result);
+
+  //Output
+  $output = '';
+  if($result_json->op_status == SUCCESS) {
+    print 'success';
+    ctools_object_cache_clear('api', 'group_info_'.$gid);
+  } else {
+    $output .= '<div class="error_request-msg"><img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">Error occurred during renewing Contractor Account. Please contact the <a href="mailto:'.variable_get('idm_contact_emailid','identityservicessupportIDM@nbcuni.com').'">IdM Support Team</a> for assistance.</div>';
+    //$output .= '<div class="error_request-msg"><img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">Error occurred during renewing Contractor Account. Please contact the <a href="mailto:identityservicessupportIDM@nbcuni.com">IdM Support Team</a> for assistance.<br> DEBUG Info<br>'.$result_json->errorMessage.'</div>';
+    print $output;
+  }
+}
+
+
+/**
+ * Callback function to extend a group
+ */
+function idm_groups_extend_group($gtype,$gid,$renew_time) {
+  if(empty($gid)) return;
+
+  //Fetch group info from the cache
+  /*$group_info = ctools_object_cache_get('api', 'group_info_'.$gid);
+  if(!empty($group_info)){
+    return $group_info;
+  }*/
+  global $user;
+  $userid = empty($user->name) ? '' : $user->name;
+  $expiration_date = date("d-M-Y", idm_portal_strtotime("+".$renew_time." months"));
+
+  //group_array require to create group_json
+  //$group_array['schemas'][] = 'urn:scim:schemas:core:1.0';
+  $group_array['requestor'] = $userid;
+  $group_array['type'] = $gtype;
+  $group_array['role'] = 'Messaging Administrator';
+  $group_array['id'] = $gid;
+  $group_array['expirationdate'] = $expiration_date;
+  $group_array['expiration'] = "TRUE";
+
+  //group_json
+  $group_json = json_encode($group_array);
+
+  //URL: the request to be sent to
+  $url  = variable_get('rest_api_check_url', 'http://3.3.175.127:8080/idm-api/rest').'/internal/groups/'.$gid;
+
+  //Sending the request
+  $method = 'PUT';
+  $result = idm_profile_execute_curl($url, $group_json, $method);
+  $result_json = json_decode($result);
+
+  // forming output
+  $output = '';
+  if($result_json->op_status == SUCCESS) {
+    ctools_object_cache_clear('api', 'group_data_expiringgroups');
+    ctools_object_cache_clear('api', 'expiringgroups_count');
+    ctools_object_cache_clear('api', 'group_data_mygroups');
+    ctools_object_cache_clear('api', 'group_data_mymemberships');
+    ctools_object_cache_clear('api', 'group_info_'.$gid);
+    print 'success';
+    //drupal_set_message(t('Request completed.'));
+    drupal_set_message(t('<img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">'.'Request completed.'));
+    //$redirect_url = '/groups';
+    //print $redirect_url;
+  } else {
+    $output .= '<div class="error_request-msg"><img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">Error occurred during the operation. Please contact the <a href="mailto:'.variable_get('idm_contact_emailid','identityservicessupportIDM@nbcuni.com').'">IdM Support Team</a> for assistance.</div>';
+    //$output .= '<div class="error_request-msg"><img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">Error occurred during the operation. Please contact the <a href="mailto:identityservicessupportIDM@nbcuni.com">IdM Support Team</a> for assistance.<br> DEBUG Info<br>'.$result_json->errorMessage.'</div>';
+    print $output;
+  }
+}
+
+/**
+ * Callback function to terminate a group
+ */
+function idm_groups_terminate_group($gtype,$gid) {
+  if(empty($gid)) return;
+
+  global $user;
+  $userid = empty($user->name) ? '' : $user->name;
+
+  //group_array require to create group_json
+  $group_array['schemas'][] = 'urn:scim:schemas:core:1.0';
+  $group_array['requestor'] = $userid;
+  $group_array['role'] = 'Messaging Administrator';
+  $group_array['type'] = $gtype;
+
+  //group_json
+  $group_json = json_encode($group_array);
+
+  //URL: the request to be sent to
+  $url  = variable_get('rest_api_check_url', 'http://3.3.175.127:8080/idm-api/rest').'/internal/groups/'.$gid;
+
+  //Sending the request
+  $method = 'DELETE';
+  $result = idm_profile_execute_curl($url, $group_json, $method);
+  $result_json = json_decode($result);
+
+  // forming output
+  $output = '';
+  if($result_json->op_status == SUCCESS) {
+    print 'success';
+    ctools_object_cache_clear('api', 'group_info_'.$gid);
+    ctools_object_cache_clear('api', 'group_data_mygroups');
+    ctools_object_cache_clear('api', 'group_data_mymemberships');
+    //idm_groups_clear_group_data_cache($gid);
+    ctools_object_cache_clear('api', $gid);
+    drupal_set_message('<img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">'.t('Request completed.'));
+    //drupal_set_message(t('Request completed.'));
+    //$redirect_url = '/groups';
+	  //print $redirect_url;
+  } else {
+    $output .= '<div class="error_request-msg"><img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">Error occurred during the operation. Please contact the <a href="mailto:'.variable_get('idm_contact_emailid','identityservicessupportIDM@nbcuni.com').'">IdM Support Team</a> for assistance.</div>';
+    //$output .= '<div class="error_request-msg"><img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">Error occurred during the operation. Please contact the <a href="mailto:identityservicessupportIDM@nbcuni.com">IdM Support Team</a> for assistance.<br> DEBUG Info<br>'.$result_json->errorMessage.'</div>';
+	  //$url = "/groups";
+    //window.location = $url;
+    print $output;
+
+  }
+}
+/**
+ * Callback function to transfer a group
+ */
+function idm_groups_transfer_group($gtype, $gid, $ownerid, $transferid) {
+  if(empty($gid)) return;
+
+  global $user;
+  $userid = empty($user->name) ? '' : $user->name;
+
+  $owner_add = array();
+  $owner_add[0]['value'] = 'uid='. $transferid.',ou=worker,dc=tfayd,dc=com';
+  $owner_add[0]['op'] = 'add';
+  $owner_add[0]['primary'] = 'true';
+
+  //group_array require to create group_json
+  $group_array['requestor'] = $userid;
+  $group_array['type'] = $gtype;
+  $group_array['id'] = $gid;
+  $group_array['owners'] = $owner_add;
+  if (in_array('Messaging Administrator', $user->roles)) {
+      $group_array['role'] = 'Messaging Administrator';
+  }
+
+  //group_json
+  $group_json = json_encode($group_array);
+  //URL: the request to be sent to
+  $url  = variable_get('rest_api_check_url', 'http://3.3.175.127:8080/idm-api/rest').'/internal/groups/'.$gid;
+
+  //Sending the request
+  $method = 'PUT';
+  $result = idm_profile_execute_curl($url, $group_json, $method);
+  $result_json = json_decode($result);
+
+  // forming output
+  $output = '';
+  if($result_json->op_status == SUCCESS) {
+    print 'success';
+    ctools_object_cache_clear('api', 'group_info_'.$gid);
+	ctools_object_cache_clear('api', 'group_data_mygroups');
+    ctools_object_cache_clear('api', 'group_data_mymemberships');
+    idm_notifications_clear_user_cache($transferid, 'mygroups');
+    drupal_set_message(t('<img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">'.'Request completed.'));
+    //drupal_set_message(t('Request completed.'));
+	//$redirect_url = '/groups';
+	//print $redirect_url;
+  } else {
+    $output .= '<div class="error_request-msg"><img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">Error occurred during the operation. Please contact the <a href="mailto:'.variable_get('idm_contact_emailid','identityservicessupportIDM@nbcuni.com').'">IdM Support Team</a> for assistance.</div>';
+    //$output .= '<div class="error_request-msg"><img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">Error occurred during the operation. Please contact the <a href="mailto:identityservicessupportIDM@nbcuni.com">IdM Support Team</a> for assistance.<br> DEBUG Info<br>'.$result_json->errorMessage.'</div>';
+    print $output;
+  }
+}
+
+
+/**
+ * Callback function to add a group member
+ */
+function idm_groups_add_group_member($gid, $gtype, $member_sso) {
+  _idm_groups_operation_member($gid, $gtype, $member_sso, 'add');
+}
+
+/**
+ * Callback function to remove a group member
+ */
+function idm_groups_remove_group_member($gid, $gtype, $member_sso) {
+  _idm_groups_operation_member($gid, $gtype, $member_sso, 'remove');
+}
+/**
+ * Callback function for internal manipulation
+ */
+function _idm_groups_operation_member($gid, $gtype, $member_sso, $op) {
+  if(empty($gid)) return;
+
+  global $user;
+  $userid = empty($user->name) ? '' : $user->name;
+
+  $group_array['requestor'] = $userid;
+  $group_array['type'] = $gtype;
+  $group_array['id'] = $gid;
+  $member = array();
+  $member['value'] = 'uid='.$member_sso.',ou=worker,dc=tfayd,dc=com';
+  $member['op'] = $op;
+  $group_array['members'][] = $member;
+
+  //group_json
+  $group_json = json_encode($group_array);
+
+  //URL: the request to be sent to
+  $url  = variable_get('rest_api_check_url', 'http://3.3.175.127:8080/idm-api/rest').'/internal/groups/'.$gid;
+
+  //Sending the request
+  $method = 'PUT';
+  $result = idm_profile_execute_curl($url, $group_json, $method);
+  $result_json = json_decode($result);
+
+  //Output
+  $output = '';
+  if($result_json->op_status == SUCCESS) {
+    print 'success';
+    ctools_object_cache_clear('api', 'group_info_'.$gid);
+  } else {
+    $output .= '<div class="error_request-msg"><img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">Error occurred during the operation. Please contact the <a href="mailto:'.variable_get('idm_contact_emailid','identityservicessupportIDM@nbcuni.com').'">IdM Support Team</a> for assistance.</div>';
+    //$output .= '<div class="error_request-msg"><img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">Error occurred during the operation. Please contact the <a href="mailto:identityservicessupportIDM@nbcuni.com">IdM Support Team</a> for assistance.<br> DEBUG Info<br>'.$result_json->errorMessage.'</div>';
+    print $output;
+  }
+}
+
+/**
+ * Callback function to add a group manager
+ */
+function idm_groups_add_group_manager($gid, $gtype, $owner_sso) {
+  _idm_groups_operation_manager($gid, $gtype, $owner_sso, 'add');
+}
+
+/**
+ * Callback function to remove a group manager
+ */
+function idm_groups_remove_group_manager($gid, $gtype, $owner_sso) {
+  _idm_groups_operation_manager($gid, $gtype, $owner_sso, 'remove');
+}
+/**
+ * Callback function for internal manipulation
+ */
+function _idm_groups_operation_manager($gid, $gtype, $owner_sso, $op) {
+  if(empty($gid)) return;
+
+  global $user;
+  $userid = empty($user->name) ? '' : $user->name;
+
+  $group_array['requestor'] = $userid;
+  $group_array['type'] = $gtype;
+  $group_array['id'] = $gid;
+  $owner = array();
+  $owner['value'] = 'uid='.$owner_sso.',ou=worker,dc=tfayd,dc=com';
+  $owner['op'] = $op;
+  $group_array['owners'][] = $owner;
+
+  //group_json
+  $group_json = json_encode($group_array);
+
+  //URL: the request to be sent to
+  $url  = variable_get('rest_api_check_url', 'http://3.3.175.127:8080/idm-api/rest').'/internal/groups/'.$gid;
+
+  //Sending the request
+  $method = 'PUT';
+  $result = idm_profile_execute_curl($url, $group_json, $method);
+  $result_json = json_decode($result);
+
+  //Output
+  $output = '';
+  if($result_json->op_status == SUCCESS) {
+    print 'success';
+    ctools_object_cache_clear('api', 'group_info_'.$gid);
+  } else {
+    $output .= '<div class="error_request-msg"><img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">Error occurred during the operation. Please contact the <a href="mailto:'.variable_get('idm_contact_emailid','identityservicessupportIDM@nbcuni.com').'">IdM Support Team</a> for assistance.</div>';
+    //$output .= '<div class="error_request-msg"><img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">Error occurred during the operation. Please contact the <a href="mailto:identityservicessupportIDM@nbcuni.com">IdM Support Team</a> for assistance.<br> DEBUG Info<br>'.$result_json->errorMessage.'</div>';
+    print $output;
+  }
+}
+
+/**
+ * Callback function to search group
+ */
+function idm_groups_get_group_search_field($gid){
+    $variables['element']['#type'] = 'textfield';
+    $variables['element']['#autocomplete_path'] = 'autocomplete/groups';
+    $variables['element']['#attributes']['id'] = 'group-search';
+    $variables['element']['#attributes']['userid'] = $gid;
+    $variables['element']['#size'] = 60;
+    $variables['element']['#theme'] = 'textfield';
+    //$variables['element']['#attributes']['placeholder'] = t('Find Group');
+    $variables['element']['#value'] = t('Find Group');
+    return theme_textfield($variables);
+}
+
+/**
+ * Callback function to autocomplete groups
+ */
+function idm_groups_groups_autocomplete($string){
+  /*global $user;
+  $userid = empty($user->name) ? '' : $user->name;
+  $matches = array();
+  $solr_base = variable_get('emp_dir_solr','http://dev.idmportal.inbcu.com:8080/solr/collection1');
+  $url = $solr_base."/select?q=supervisorid:$userid%20AND%20title:*".urlencode($string)."*&wt=json&indent=true";
+  $response_obj = drupal_http_request($url);
+  $response = $response_obj->data;
+  $docs = json_decode($response)->response->docs;
+  //cache_clear_all('*', 'cache', TRUE);
+  foreach ($docs as $value ) {
+    $matches[$value->title[0]] = str_ireplace($string,"<span class=\"auto-highlight\">$string</span>" , $value->title[0]);
+  }
+  drupal_json_output($matches);*/
+}
+
+/**
+ * Method to download the Groups List.
+ */
+function idm_groups_download($fetchType) {
+  //$group_list = _idm_groups_get_grouplist('mygroups','id','ascending');
+  $group_list = _idm_groups_get_grouplist($fetchType,'id','ascending');
+  $group_array = array();
+  $totalresults = $group_list['totalResults'];
+  for($i=0; $i<$totalresults; $i++){
+      $group_array[$i]['Gid'] = !empty($group_list[$i]['id']) ? $group_list[$i]['id'] : '';
+      $group_array[$i]['Groupname'] = !empty($group_list[$i]['name']) ? $group_list[$i]['name'] : '' ;
+      $group_array[$i]['Description'] = !empty($group_list[$i]['description']) ? $group_list[$i]['description'] : '';
+      $group_array[$i]['Memberscount'] = !empty($group_list[$i]['memberscount']) ? $group_list[$i]['memberscount'] : '0' ;
+      $group_array[$i]['Manager'] = !empty($group_list[$i]['manager']) ? $group_list[$i]['manager'] : '';
+      $group_array[$i]['Manager sso'] = !empty($group_list[$i]['manager_sso']) ? $group_list[$i]['manager_sso'] : '';
+      $group_array[$i]['Expiration date'] = !empty($group_list[$i]['expirationdate']) ? $group_list[$i]['expirationdate'] : '';
+      $group_status = !empty($group_list[$i]['status']) ? $group_list[$i]['status'] : '';
+      if($group_status == 'lock') {
+        $group_status = 'private';
+      }
+      if($group_status == 'eye') {
+        $group_status = 'public';
+      }
+      $group_array[$i]['Status'] = !empty($group_status) ? $group_status : '';
+  }
+/*foreach ($group_list as $key => $value) {
+    if ($key != "totalResults") {
+      $group_array[$key]['Gid'] = !empty($value['id']) ? $value['id'] : '';
+      $group_array[$key]['Groupname'] = !empty($value['name']) ? $value['name'] : '' ;
+      $group_array[$key]['Description'] = !empty($value['description']) ? $value['description'] : '';
+      $group_array[$key]['Memberscount'] = !empty($value['memberscount']) ? $value['memberscount'] : '' ;
+      $group_array[$key]['Manager'] = !empty($value['manager']) ? $value['manager'] : '';
+      $group_array[$key]['Manager sso'] = !empty($value['manager_sso']) ? $value['manager_sso'] : '';
+      $group_array[$key]['Expiration date'] = !empty($value['expirationdate']) ? $value['expirationdate'] : '';
+      $group_array[$key]['Status'] = !empty($value['status']) ? $value['status'] : '';
+    }
+  }*/
+  export_to_excel($group_array, 'group_list');
+}
+
+/**
+ * Method to download the Groups List.
+ */
+function idm_groups_members_download($gid) {
+  ctools_object_cache_clear('api', 'group_info_'.$gid);
+  $gtype = 'DST';
+  $group_info = _idm_groups_get_group_info($gtype,$gid);
+  $membercount = count($group_info['group_members']);
+  $group_array = array();
+  for($i=0; $i<$membercount; $i++){
+    $group_array[$i]['GroupEmailAddress'] = !empty($group_info['email']['primary']) ? $group_info['email']['primary'] : '' ;
+    $group_array[$i]['SSO'] = !empty($group_info['group_members'][$i]['sso']) ? $group_info['group_members'][$i]['sso'] : '';
+    $pos_g = strpos($group_info['group_members'][$i]['sso'], 'g');
+    if ($pos_g !== false) {//group id
+      $group_array[$i]['Email'] = !empty($group_info['group_members'][$i]['members_group_email']) ? $group_info['group_members'][$i]['members_group_email'] : '';
+      $group_array[$i]['DisplayName'] = !empty($group_info['group_members'][$i]['members_display']) ? $group_info['group_members'][$i]['members_display'] : '' ;
+    } else {//user id
+      $group_array[$i]['Email'] = !empty($group_info['group_members'][$i]['member_email']) ? $group_info['group_members'][$i]['member_email'] : '';
+      $group_array[$i]['DisplayName'] = !empty($group_info['group_members'][$i]['display_name']) ? $group_info['group_members'][$i]['display_name'] : '' ;
+    }
+  }
+  export_to_excel($group_array, $gid);
+}
+
+/**
+  * Function to create group and edit group
+  */
+function idm_groups_create_group($form, &$form_state, $gid = '') {
+  if(isset($_SESSION['legacy'])) {
+    $external_url = variable_get('idm_waveset_create_group_url','https://sso.stg.inbcu.com/nbcucentral/app/pwchange.jsp');
+    drupal_goto($external_url, array('external' => TRUE));
+  } else {
+    global $user;
+    $profile_id = empty($user->name) ? '' : $user->name;
+    $info = _idm_profile_get_user($profile_id);
+    $primary_manager = $info['displayname'].' ('.$profile_id.')';
+
+    $createfor = '0';
+    $gtype = 'DST';
+    $group_form_title = 'Create New Group';
+    $buttontxt = 'Submit';
+    $groupmanager_display = 'none';
+    $membershippolicy = 'public';
+    $hide_group_membership = 'FALSE';
+    $hidefromaddresslists = 'FALSE';
+    $securitygroup = 'FALSE';
+    $groupmanager = '';
+    $displayname = '';
+    $email_primary = '';
+    $email_domains = '@nbcuni.com';
+    $description = '';
+    $alternateemails = '';
+    $hide_group_membership_public = '';
+    $hide_group_membership_private = '';
+    $primary_manager_pm_sso = '';
+    $is_messaging_admin = in_array('Messaging Administrator', $user->roles) ? TRUE : FALSE;
+
+    $user_sso = empty($info['sso']) ? '' : $info['sso'];
+    $user_displayname = empty($info['displayname']) ? '' : $info['displayname'];
+    if((empty($gid)) && in_array('Messaging Administrator', $user->roles)){
+      $additional_managers = '';
+    } else {
+      $additional_managers = '<div class="primay_manager_myself"><a href="/profile/'.$user_sso.'"><img src="/sites/all/themes/idmtheme/images/solid-person-icon.svg"> '.$user_displayname.' ('.$user_sso.')</a></div><div class="primay_manager_someoneelse" style="display: none;"></div>';
+    }
+    $additional_managers_sso = '';
+    $comments = '';
+    $expirationdate = '';
+    //Edit group values initiation start
+    if(!empty($gid)) {
+      $group_form_title = 'Edit Group - '.$gid;
+      $buttontxt = 'Save';
+      //Fetch group info from API
+      $group_array = _idm_groups_get_group_info($gtype, $gid);
+      $gtype = (empty($group_array['type'])) ? 'DST' : $group_array['type'];
+      //echo 'createfor'.$createfor = (empty($group_array['group_creator_sso'])) ? 'None' : $group_array['group_creator_sso'];
+      $createformanager = (empty($group_array['primarymanager'])) ? '' : $group_array['primarymanager'];
+      $createformanager = preg_replace("/[^0-9]+/", "", $createformanager);
+      if($createformanager == $profile_id) {
+        $createfor = '0';
+        $groupmanager_display = 'none';
+      } else {
+        $createfor = '1';
+        $groupmanager_display = 'block';
+        $gr_creator_firstname = (empty($group_array['group_creator_firstname'])) ? '' : $group_array['group_creator_firstname'];
+        $gr_creator_lastname = (empty($group_array['group_creator_lastname'])) ? '' : $group_array['group_creator_lastname'];
+        $gr_creator_sso = (empty($group_array['group_creator_sso'])) ? '' : $group_array['group_creator_sso'];
+        if ($gr_creator_sso == '') {
+          $groupmanager = $gr_creator_firstname.' '.$gr_creator_lastname;
+        } else {
+          $groupmanager = $gr_creator_firstname.' '.$gr_creator_lastname.' ('.$gr_creator_sso.')';
+        }
+      }
+
+      $displayname = (empty($group_array['displayName'])) ? '' : $group_array['displayName'];
+      $displayname = $is_messaging_admin ? trim($displayname) : trim(str_ireplace('@NBC UNI', '', $displayname));
+      $email_primary = (empty($group_array['email']['primary'])) ? '' : $group_array['email']['primary'];
+      $description = (empty($group_array['description'])) ? '' : $group_array['description'];
+      $membershippolicy = (empty($group_array['membershippolicy'])) ? 'public' : strtolower($group_array['membershippolicy']);
+      $hidefromaddresslists = (empty($group_array['hidefromaddresslists'])) ? 'FALSE' : $group_array['hidefromaddresslists'];
+      $securitygroup = (empty($group_array['securitygroup'])) ? 'FALSE' : $group_array['securitygroup'];
+      $comments = (empty($group_array['comments'])) ? '' : $group_array['comments'];
+      $expirationdate = (empty($group_array['expirationdate'])) ? '' : $group_array['expirationdate'];
+      $primary_manager = (empty($group_array['primarymanager'])) ? '' : $group_array['primarymanager'];
+        $primary_manager_pm_sso = (empty($group_array['primarymanager_pm_sso'])) ? '' : $group_array['primarymanager_pm_sso'];
+
+      if($membershippolicy == 'public') {
+        $hide_group_membership_public = 'block';
+        $hide_group_membership_private = 'none';
+          $hide_group_membership = 'FALSE';
+      } else {
+        $hide_group_membership_public = 'none';
+        $hide_group_membership_private = 'block';
+          $hide_group_membership = 'TRUE';
+      }
+    }
+
+    //alternate emails list
+    if(!empty($gid) || !empty($form_state['input']['new_alternate_email'])) {
+      $alternateemails = '';
+      $group_alternateemails_new = array();
+      if (!empty($form_state['input']['new_alternate_email'])) {
+        $group_array['alternateemails_added'] = explode(',', $form_state['input']['new_alternate_email']);
+        foreach ($group_array['alternateemails_added'] as $key_added => $value_added) {
+          $group_alternateemails_new[$key_added] = '[**]'.trim($value_added);
+        }
+      }
+      $group_alternateemails_all = array();
+      if (!empty($group_alternateemails_new)) {
+        if (!empty($group_array['alternateemails'])) {
+          $group_alternateemails_all = array_merge($group_array['alternateemails'], $group_alternateemails_new);
+        } else {
+          $group_alternateemails_all = $group_alternateemails_new;
+        }
+      } else {
+        if (!empty($group_array['alternateemails'])) {
+          $group_alternateemails_all = $group_array['alternateemails'];
+        }
+      }
+      if (!empty($group_alternateemails_all)) {
+        foreach ($group_alternateemails_all as $key => $value) {
+            $mystring = $value;
+            $findme   = '[**]';
+            $posofnewtag = strpos($mystring, $findme);
+            if ($posofnewtag === false) {//group id
+              $alternateemails = $alternateemails.'<div class="mgr-name">'.$value.'</div><div class="group-delete group-delete-old" id="'.$value.'"></div>';
+          } else {
+              $eid = ltrim($value,"[**]");
+              $alternateemails = $alternateemails.'<div class="mgr-name">'.$eid.'</div><div class="group-delete" id="'.$eid.'"></div>';
+          }
+        }
+      }
+    }
+
+    $primary_manager_pm_sso = (empty($group_array['primarymanager_pm_sso'])) ? '' : $group_array['primarymanager_pm_sso'];
+    $additional_managers_count = 0;
+    //additional managers list
+    if(!empty($gid) || !empty($form_state['input']['new_manager_sso'])) {
+      $additional_managers = '';
+      $additional_managers_sso = '';
+      $group_managers_new = array();
+      if (!empty($form_state['input']['new_manager_sso'])) {
+        $group_array['group_managers_sso_new'] = explode(',', $form_state['input']['new_manager_sso']);
+        $group_array['group_managers_name_new'] = explode(',', $form_state['input']['new_manager_names']);
+        foreach ($group_array['group_managers_sso_new'] as $key_new => $value_new) {
+          $mystring = $value_new;
+          $findme   = 'g';
+          $pos = strpos($mystring, $findme);
+          if ($pos !== false) {//group id
+            $group_managers_new[$key_new]['manager_sso'] = trim($value_new);
+            $posofname = strpos($group_array['group_managers_name_new'][$key_new],"(");
+            $dname = substr($group_array['group_managers_name_new'][$key_new], 0, $posofname-1);
+            $demail = rtrim(substr($group_array['group_managers_name_new'][$key_new], $posofname),")");
+            $group_managers_new[$key_new]['display'] = $dname;
+            $group_managers_new[$key_new]['email'] = $demail;
+            $group_managers_new[$key_new]['oldflag'] = 1;
+          } else {
+            $group_managers_new[$key_new]['manager_sso'] = trim($value_new);
+            $group_managers_new[$key_new]['firstname'] = $group_array['group_managers_name_new'][$key_new];
+            $group_managers_new[$key_new]['lastname'] = '';
+            $group_managers_new[$key_new]['preferredname_display'] = '';
+            $group_managers_new[$key_new]['oldflag'] = 1;
+          }
+        }
+      }
+      $group_managers_all = array();
+      if (!empty($group_managers_new)) {
+        if (!empty($group_array['group_managers'])) {
+          $group_managers_all = array_merge($group_array['group_managers'], $group_managers_new);
+        } else {
+          $group_managers_all = $group_managers_new;
+        }
+      } else {
+        if (!empty($group_array['group_managers'])) {
+          $group_managers_all = $group_array['group_managers'];
+        }
+      }
+      //echo '<pre>';
+      //print_r($group_managers_all);
+      if (!empty($group_managers_all)) {
+        foreach ($group_managers_all as $key => $value) {
+          if ((!empty($value['firstname']) || !empty($value['lastname'])) && (!empty($value['manager_sso']))) {//user SSO
+            $ssoname = $value['firstname'].' '.$value['lastname'];
+            $preferredname_manager = $value['preferredname_display'];
+            $icon_img_path_primary = drupal_get_path('theme', 'idmtheme').'/images/outline-person-icon.svg';
+            $icon_img_path = drupal_get_path('theme', 'idmtheme').'/images/solid-person-icon.svg';
+            if ($icon_img_path_primary) $icon_primary = '<img src="/' . $icon_img_path_primary . '">&nbsp;';
+            if ($icon_img_path) $icon = '<img src="/' . $icon_img_path . '">&nbsp;';
+            if ($value['manager_sso'] == $primary_manager_pm_sso) {
+              if($value['primary']) {
+                $additional_managers = $additional_managers.'<div class="new-mgr-name"><div class="new-mgr-icon"><a href="/profile/'.$value['manager_sso'].'">'.$icon_primary.'</a></div><div class="new-mgr-link"><a style="font-weight:bold;" href="/profile/'.$value['manager_sso'].'">'.$preferredname_manager.'</a></div><div class="new-mgr-no-delete-primary new-mgr-delete-old" id="'.$value['manager_sso'].'" ssoname="'.$ssoname.'"></div></div>';
+              } else {
+                $additional_managers = $additional_managers.'<div class="new-mgr-name"><div class="new-mgr-icon"><a href="/profile/'.$value['manager_sso'].'">'.$icon.'</a></div><div class="new-mgr-link"><a href="/profile/'.$value['manager_sso'].'">'.$preferredname_manager.'</a></div><div class="new-mgr-no-delete-primary new-mgr-delete-old" id="'.$value['manager_sso'].'" ssoname="'.$ssoname.'"></div></div>';
+              }
+              $additional_managers_count++;
+            } else {
+              if (!isset($value['oldflag'])) {
+                if($value['primary']) {
+                  $additional_managers = $additional_managers.'<div class="new-mgr-name"><div class="new-mgr-icon"><a href="/profile/'.$value['manager_sso'].'" class="pm_no_parimary">'.$icon_primary.'</a></div><div class="new-mgr-link"><a href="/profile/'.$value['manager_sso'].'" style="font-weight:bold;" class="pm_no_parimary">'.$preferredname_manager.'</a></div><div class="new-mgr-delete new-mgr-delete-old" id="'.$value['manager_sso'].'" ssoname="'.$ssoname.'"></div></div>';
+                } else {
+                  $additional_managers = $additional_managers.'<div class="new-mgr-name"><div class="new-mgr-icon"><a href="/profile/'.$value['manager_sso'].'" class="pm_no_parimary">'.$icon.'</a></div><div class="new-mgr-link"><a href="/profile/'.$value['manager_sso'].'" class="pm_no_parimary">'.$preferredname_manager.'</a></div><div class="new-mgr-delete new-mgr-delete-old" id="'.$value['manager_sso'].'" ssoname="'.$ssoname.'"></div></div>';
+                }
+                $additional_managers_count++;
+              } else {
+                if($value['primary']) {
+                  $additional_managers = $additional_managers.'<div class="new-mgr-name"><div class="new-mgr-icon"><a href="/profile/'.$value['manager_sso'].'" class="pm_no_parimary">'.$icon_primary.'</a></div><div class="new-mgr-link"><a href="/profile/'.$value['manager_sso'].'" style="font-weight:bold;"  class="pm_no_parimary">'.$value['firstname'].' '.$value['lastname'].'</a></div><div class="new-mgr-delete" id="'.$value['manager_sso'].'" ssoname="'.$ssoname.'"></div></div>';
+                } else {
+                  $additional_managers = $additional_managers.'<div class="new-mgr-name"><div class="new-mgr-icon"><a href="/profile/'.$value['manager_sso'].'" class="pm_no_parimary">'.$icon.'</a></div><div class="new-mgr-link"><a href="/profile/'.$value['manager_sso'].'" class="pm_no_parimary">'.$value['firstname'].' '.$value['lastname'].'</a></div><div class="new-mgr-delete" id="'.$value['manager_sso'].'" ssoname="'.$ssoname.'"></div></div>';
+                }
+                $additional_managers_count++;
+              }
+            }
+            $additional_managers_sso = $additional_managers_sso.','.$value['manager_sso'];
+          } else {//group id
+            $ssoname = $value['display'].' ('.$value['email'].')';
+            $icon_img_path = drupal_get_path('theme', 'idmtheme').'/images/asseticon.jpg';
+            if ($icon_img_path) $icon = '<img src="/' . $icon_img_path . '">&nbsp;';
+            if (!isset($value['oldflag'])) {
+              if($value['primary']) {
+                $additional_managers .= '<div class="new-mgr-name"><div class="new-mgr-icon"><a href="/group/DST/'.$value['manager_sso'].'">'.$icon.'</a></div><div class="new-mgr-link"><a style="font-weight:bold;" href="/group/DST/'.$value['manager_sso'].'">'.$value['display'].' ('.$value['email'].')</a></div><div class="new-mgr-delete new-mgr-delete-old" id="'.$value['manager_sso'].'" ssoname="'.$ssoname.'"></div></div>';
+              } else {
+                $additional_managers .= '<div class="new-mgr-name"><div class="new-mgr-icon"><a href="/group/DST/'.$value['manager_sso'].'">'.$icon.'</a></div><div class="new-mgr-link"><a href="/group/DST/'.$value['manager_sso'].'">'.$value['display'].' ('.$value['email'].')</a></div><div class="new-mgr-delete new-mgr-delete-old" id="'.$value['manager_sso'].'" ssoname="'.$ssoname.'"></div></div>';
+              }
+              $additional_managers_count++;
+            } else {
+              if($value['primary']) {
+                $additional_managers .= '<div class="new-mgr-name"><div class="new-mgr-icon"><a href="/group/DST/'.$value['manager_sso'].'">'.$icon.'</a></div><div class="new-mgr-link"><a style="font-weight:bold;" href="/group/DST/'.$value['manager_sso'].'">'.$value['display'].' ('.$value['email'].')</a></div><div class="new-mgr-delete" id="'.$value['manager_sso'].'" ssoname="'.$ssoname.'"></div></div>';
+              } else {
+                $additional_managers .= '<div class="new-mgr-name"><div class="new-mgr-icon"><a href="/group/DST/'.$value['manager_sso'].'">'.$icon.'</a></div><div class="new-mgr-link"><a href="/group/DST/'.$value['manager_sso'].'">'.$value['display'].' ('.$value['email'].')</a></div><div class="new-mgr-delete" id="'.$value['manager_sso'].'" ssoname="'.$ssoname.'"></div></div>';
+              }
+              $additional_managers_count++;
+            }
+            $additional_managers_sso = $additional_managers_sso.','.$value['manager_sso'];
+          }
+        }
+      }
+    }
+
+    ///additional members list
+    $members_count = 0;
+    if(!empty($gid) || !empty($form_state['input']['new_member_sso'])) {
+      $additional_members = '';
+      $additional_members_sso = '';
+      $group_members_new = array();
+      if (!empty($form_state['input']['new_member_sso'])) {
+        $group_array['group_members_sso_new'] = explode(',', $form_state['input']['new_member_sso']);
+        $group_array['group_members_name_new'] = explode(',', $form_state['input']['new_member_names']);
+        foreach ($group_array['group_members_sso_new'] as $key_new => $value_new) {
+          $mystring = $value_new;
+          $findme   = 'g';
+          $pos = strpos($mystring, $findme);
+          if ($pos !== false) {//group id
+            $group_members_new[$key_new]['sso'] = trim($value_new);
+            $posofname = strpos($group_array['group_members_name_new'][$key_new],"(");
+            $dname = substr($group_array['group_members_name_new'][$key_new], 0, $posofname-1);
+            $demail = rtrim(substr($group_array['group_members_name_new'][$key_new], $posofname),")");
+            $group_members_new[$key_new]['group_member_display'] = $dname;
+            $group_members_new[$key_new]['group_member_email'] = $demail;
+            $group_members_new[$key_new]['oldflag'] = 1;
+          } else {
+            $group_members_new[$key_new]['sso'] = trim($value_new);
+            $group_members_new[$key_new]['display_name'] = $group_array['group_members_name_new'][$key_new];
+            //$group_members_new[$key_new]['lastname'] = '';
+            $group_members_new[$key_new]['preferredname'] = '';
+            $group_members_new[$key_new]['oldflag'] = 1;
+          }
+        }
+      }
+      $group_members_all = array();
+      if (!empty($group_members_new)) {
+        if (!empty($group_array['group_members'])) {
+          $group_members_all = array_merge($group_array['group_members'], $group_members_new);
+        } else {
+          $group_members_all = $group_members_new;
+        }
+      } else {
+        if (!empty($group_array['group_members'])) {
+          $group_members_all = $group_array['group_members'];
+        }
+      }
+
+      if (!empty($group_members_all)) {
+        foreach ($group_members_all as $key_member => $value_member) {
+          $mystring_gm = $value_member['sso'];
+          $findme_gm   = 'g';
+          $pos_gm = strpos($mystring_gm, $findme_gm);
+          if ($pos_gm !== false) {//group id
+            //$ssoname = $value['display'].' ('.$value['email'].')';
+            $ssoname = $value_member['members_display'];
+            $icon_img_path = drupal_get_path('theme', 'idmtheme').'/images/asseticon.jpg';
+            if ($icon_img_path) $icon = '<img src="/' . $icon_img_path . '">&nbsp;';
+            if (!isset($value_member['oldflag'])) {
+              $additional_members = $additional_members.'<div class="new-member-name"><div class="new-member-icon"><a href="/group/DST/'.$value_member['sso'].'">'.$icon.'</a></div><div class="new-member-link"><a href="/group/DST/'.$value_member['sso'].'">'.$value_member['members_display'].' ('.$value_member['members_group_email'].')</a></div><div class="new-member-delete new-member-delete-old" id="'.$value_member['sso'].'" ssoname="'.$ssoname.'"></div></div>';
+              $members_count++;
+            } else {
+              $additional_members = $additional_members.'<div class="new-member-name"><div class="new-member-icon"><a href="/group/DST/'.$value_member['sso'].'">'.$icon.'</a></div><div class="new-member-link"><a href="/group/DST/'.$value_member['sso'].'">'.$value_member['members_display'].' ('.$value_member['members_group_email'].')</a></div><div class="new-member-delete" id="'.$value_member['sso'].'" ssoname="'.$ssoname.'"></div></div>';
+              $members_count++;
+            }
+            $additional_members_sso = $additional_members_sso.','.$value_member['sso'];
+          } else {//user id
+            //$ssoname = $value_member['display_name'].' '.$value_member['lastname'];
+            $ssoname = $value_member['display_name'];
+            $icon_img_path_primary = drupal_get_path('theme', 'idmtheme').'/images/outline-person-icon.svg';
+            $icon_img_path = drupal_get_path('theme', 'idmtheme').'/images/solid-person-icon.svg';
+            if ($icon_img_path) $icon = '<img src="/' . $icon_img_path . '">&nbsp;';
+            if (!isset($value_member['oldflag'])) {
+              $additional_members = $additional_members.'<div class="new-member-name"><div class="new-member-icon"><a href="/profile/'.$value_member['sso'].'" class="pm_no_parimary">'.$icon.'</a></div><div class="new-member-link"><a href="/profile/'.$value_member['sso'].'" class="pm_no_parimary">'.$value_member['display_name'].'</a></div><div class="new-member-delete new-member-delete-old" id="'.$value_member['sso'].'" ssoname="'.$ssoname.'"></div></div>';
+              $members_count++;
+            } else {
+              $additional_members = $additional_members.'<div class="new-member-name"><div class="new-member-icon"><a href="/profile/'.$value_member['sso'].'" class="pm_no_parimary">'.$icon.'</a></div><div class="new-member-link"><a href="/profile/'.$value_member['sso'].'" class="pm_no_parimary">'.$value_member['display_name'].'</a></div><div class="new-member-delete" id="'.$value_member['sso'].'" ssoname="'.$ssoname.'"></div></div>';
+              $members_count++;
+            }
+            $additional_members_sso = $additional_members_sso.','.$value_member['sso'];
+          }
+        }
+      }
+    }
+
+    //allowedtosend list
+    $allowedtosend_list_count = 0;
+    if(!empty($gid) || !empty($form_state['input']['restrictions_sso'])) {
+      $allowedtosend_list = '';
+      $allowedtosend_list_sso = '';
+      $group_allowedtosend_new = array();
+      if (!empty($form_state['input']['restrictions_sso'])) {
+        $group_array['group_allowedtosend_sso_new'] = explode(',', $form_state['input']['restrictions_sso']);
+        $group_array['group_allowedtosend_name_new'] = explode(',', $form_state['input']['restrictions_names']);
+        foreach ($group_array['group_allowedtosend_sso_new'] as $key_new => $value_new) {
+          $mystring = $value_new;
+          $findme   = 'g';
+          $pos = strpos($mystring, $findme);
+          if ($pos !== false) {//group id
+            $group_allowedtosend_new[$key_new]['allowedtosend_sso'] = trim($value_new);
+            $posofname = strpos($group_array['group_allowedtosend_name_new'][$key_new],"(");
+            $dname = substr($group_array['group_allowedtosend_name_new'][$key_new], 0, $posofname-1);
+            $demail = rtrim(substr($group_array['group_allowedtosend_name_new'][$key_new], $posofname),")");
+            $group_allowedtosend_new[$key_new]['allowedtosend_display'] = $dname;
+            $group_allowedtosend_new[$key_new]['allowedtosend_group_email'] = $demail;
+            $group_allowedtosend_new[$key_new]['oldflag'] = 1;
+          } else {
+            $group_allowedtosend_new[$key_new]['allowedtosend_sso'] = trim($value_new);
+            $group_allowedtosend_new[$key_new]['display_name'] = $group_array['group_allowedtosend_name_new'][$key_new];
+            //$group_allowedtosend_new[$key_new]['lastname'] = '';
+            $group_allowedtosend_new[$key_new]['preferredname'] = '';
+            $group_allowedtosend_new[$key_new]['oldflag'] = 1;
+          }
+        }
+      }
+      $group_allowedtosend_all = array();
+      if (!empty($group_allowedtosend_new)) {
+        if (!empty($group_array['group_allowedtosend'])) {
+          $group_allowedtosend_all = array_merge($group_array['group_allowedtosend'], $group_allowedtosend_new);
+        } else {
+          $group_allowedtosend_all = $group_allowedtosend_new;
+        }
+      } else {
+        if (!empty($group_array['group_allowedtosend'])) {
+          $group_allowedtosend_all = $group_array['group_allowedtosend'];
+        }
+      }
+      if (!empty($group_allowedtosend_all)) {
+        foreach ($group_allowedtosend_all as $key => $value) {
+          $mystring_gu = $value['allowedtosend_sso'];
+          $findme_gu   = 'g';
+          $pos_gu = strpos($mystring_gu, $findme_gu);
+          if ($pos_gu !== false) {//group id
+            //$ssoname = $value['display'].' ('.$value['email'].')';
+            $ssoname = $value['allowedtosend_display'];
+            $icon_img_path = drupal_get_path('theme', 'idmtheme').'/images/asseticon.jpg';
+            if ($icon_img_path) $icon = '<img src="/' . $icon_img_path . '">&nbsp;';
+            if (!isset($value['oldflag'])) {
+              $allowedtosend_list = $allowedtosend_list.'<div class="mgr-name"><div class="mgr-icon"><a href="/group/DST/'.$value['allowedtosend_sso'].'">'.$icon.'</a></div><div class="mgr-link"><a href="/group/DST/'.$value['allowedtosend_sso'].'">'.$value['allowedtosend_display'].' ('.$value['allowedtosend_group_email'].')</a></div><div class="group-delete new-res-delete-old" id="'.$value['allowedtosend_sso'].'" ssoname="'.$ssoname.'"></div></div>';
+              $allowedtosend_list_count++;
+            } else {
+              $allowedtosend_list = $allowedtosend_list.'<div class="mgr-name"><div class="mgr-icon"><a href="/group/DST/'.$value['allowedtosend_sso'].'">'.$icon.'</a></div><div class="mgr-link"><a href="/group/DST/'.$value['allowedtosend_sso'].'">'.$value['allowedtosend_display'].' ('.$value['allowedtosend_group_email'].')</a></div><div class="group-delete" id="'.$value['allowedtosend_sso'].'" ssoname="'.$ssoname.'"></div></div>';
+              $allowedtosend_list_count++;
+            }
+            $allowedtosend_list_sso = $allowedtosend_list_sso.','.$value['allowedtosend_sso'];
+          } else {//user id
+            //$ssoname = $value['display_name'].' '.$value['lastname'];
+            $ssoname = $value['display_name'];
+            $icon_img_path_primary = drupal_get_path('theme', 'idmtheme').'/images/outline-person-icon.svg';
+            $icon_img_path = drupal_get_path('theme', 'idmtheme').'/images/solid-person-icon.svg';
+            if ($icon_img_path) $icon = '<img src="/' . $icon_img_path . '">&nbsp;';
+            if (!isset($value['oldflag'])) {
+              $allowedtosend_list = $allowedtosend_list.'<div class="mgr-name"><div class="mgr-icon"><a href="/profile/'.$value['allowedtosend_sso'].'" class="pm_no_parimary">'.$icon.'</a></div><div class="mgr-link"><a href="/profile/'.$value['allowedtosend_sso'].'" class="pm_no_parimary">'.$value['display_name'].'</a></div><div class="group-delete new-res-delete-old" id="'.$value['allowedtosend_sso'].'" ssoname="'.$ssoname.'"></div></div>';
+              $allowedtosend_list_count++;
+            } else {
+              $allowedtosend_list = $allowedtosend_list.'<div class="mgr-name"><div class="mgr-icon"><a href="/profile/'.$value['allowedtosend_sso'].'" class="pm_no_parimary">'.$icon.'</a></div><div class="mgr-link"><a href="/profile/'.$value['allowedtosend_sso'].'" class="pm_no_parimary">'.$value['display_name'].'</a></div><div class="group-delete" id="'.$value['allowedtosend_sso'].'" ssoname="'.$ssoname.'"></div></div>';
+              $allowedtosend_list_count++;
+            }
+            $allowedtosend_list_sso = $allowedtosend_list_sso.','.$value['allowedtosend_sso'];
+          }
+        }
+      }
+    }
+
+    //Edit group values initiation end
+    drupal_add_js(drupal_get_path('module', 'idm_profile').'/js/script.js');
+    drupal_add_js(drupal_get_path('module', 'idm_groups').'/js/jquery.ui.core.js');
+    drupal_add_js(drupal_get_path('module', 'idm_groups').'/js/jquery.ui.widget.js');
+    drupal_add_js(drupal_get_path('module', 'idm_groups').'/js/jquery.ui.position.js');
+    drupal_add_js(drupal_get_path('module', 'idm_groups').'/js/jquery.ui.tooltip.js');
+    $form['group'] = array(
+      '#type' => 'fieldset',
+      '#attributes' => array (
+      'class' => array (
+      'group-info'
+      )
+      ),
+    );
+    $form['group']['title'] = array(
+      '#markup' => $group_form_title,
+      '#prefix' => '<div class="title"><h2>',
+      '#suffix' => '</h2></div>'
+    );
+    //hidden fields start
+    $form['group']['gid'] = array(
+      '#type' => 'hidden',
+      '#value' => $gid,
+      '#attributes' => array ('id' => array ('gid')),
+    );
+    $form['group']['gtype'] = array(
+      '#type' => 'hidden',
+      '#value' => $gtype,
+      '#attributes' => array ('id' => array ('gtype')),
+    );
+    $form['group']['email-changed'] = array(
+      '#type' => 'hidden',
+      '#value' => '0',
+      '#attributes' => array ('id' => array ('email-changed')),
+    );
+  if((empty($gid)) && in_array('Messaging Administrator', $user->roles)){
+  } else {
+    $form['group']['createfor'] = array(
+      '#title' => t('Create for'),
+      '#type' => 'select',
+      '#options' => array('Myself', 'Someone else'),
+      '#default_value' => $createfor,
+      '#prefix' => '<div class="field-row createfor"><span title="This field is required." class="form-required"></span>',
+      '#suffix' => '</div>',
+      '#chosen' => TRUE,
+    );
+    $form['group']['groupmanager'] = array(
+      '#type' => 'textfield',
+      '#required' => FALSE,
+      '#autocomplete_path' => 'autocomplete/groupmanager',
+      //'#default_value' => $groupmanager,
+      '#default_value' => $primary_manager,
+      '#prefix' => '<div class="field-row search-groupmanager" style="display:'.$groupmanager_display.'">',
+      '#suffix' => '<label for="edit-groupmanager" generated="true" class="error" style="display: none;">Please select a user</label><div class="icon-search_icon"></div><button class="small_button hover-blue" onclick="javascript: return false;">Search</button></div>'
+    );
+  }
+    $form['group']['nam_hidden'] = array(
+        '#type' => 'hidden',
+        '#default_value' => 'mgrselected',
+        '#attributes' => array (
+         'id' => 'nam_id'
+        ),
+    );
+  if((!empty($gid)) && !in_array('Messaging Administrator', $user->roles)){
+    $form['group']['displayname'] = array(
+      '#title' => t(''),
+      '#type' => 'hidden',
+      '#value' => '@NBC UNI'.$displayname,
+      '#prefix' => '<div class="field-row email-label"><span class="form-required" title="This field is required."></span><label for="edit-email">Display Name</label>',
+      '#suffix' => '<div class="mail">@NBC UNI'.$displayname.'</div></div>',
+    );
+  } else {
+    if(!in_array('Messaging Administrator', $user->roles)) {
+      $form['group']['displayname_parent'] = array(
+        '#title' => t('Display Name'),
+        '#type' => 'select',
+        '#required' => TRUE,
+        '#prefix' => '<div class="field-row displayname_parent msg_user"><div class ="field-row helper-text">Ex: @NBC UNI Finance Approvers.</div><span title="This field is required." class="form-required">*</span>',
+        //'#suffix' => '</div>',
+        '#options' => array('@NBC UNI' => '@NBC UNI'),
+        '#default_value' => '@NBC UNI',
+        '#chosen' => TRUE,
+      );
+      $form['group']['displayname'] = array(
+        '#title' => t(''),
+        '#type' => 'textfield',
+        '#default_value' => $displayname,
+        '#suffix' => '<label class="error" style="display: none;" id="enter_displayname" for="edit-displayname" generated="true">Enter a valid display name</label><div class="check_availability_button_displayname"><button class="small_button hover-blue" onclick="javascript: return false;">Check Availability</button><div class="ajax_throbber" style="display: none;"><img src="/sites/all/themes/idmtheme/images/ajax-loader.gif"></div><div class="available_displayname"></div><div class="taken_displayname"></div></div></div><div class="check_availability_button_displayname_mobile check_availability_mobile"><a href="#" onclick="javascript: return false;">Check Availability</a></div>',
+      );
+      } else {
+        $class = 'msg_admin';
+     /* $form['group']['displayname_parent'] = array(
+        '#title' => t(''),
+        '#type' => 'hidden',
+        '#value' => '@NBC UNI',
+      );*/
+      $form['group']['displayname'] = array(
+        '#title' => t('Display Name'),
+        '#type' => 'textfield',
+        '#required' => TRUE,
+        '#prefix' => '<div class="msg_admin_displayname"><div class="field-row displayname_parent '.$class.'"><div class ="field-row helper-text">Ex: @NBC UNI Finance Approvers.</div><span title="This field is required." class="form-required">*</span>',
+        '#suffix' => '<label class="error" style="display: none;" id="enter_displayname" for="edit-displayname" generated="true">Enter a valid display name</label><div class="check_availability_button_displayname"><button class="small_button hover-blue" onclick="javascript: return false;">Check Availability</button><div class="ajax_throbber" style="display: none;"><img src="/sites/all/themes/idmtheme/images/ajax-loader.gif"></div><div class="available_displayname"></div><div class="taken_displayname"></div></div></div></div><div class="check_availability_button_displayname_mobile check_availability_mobile"><a href="#" onclick="javascript: return false;">Check Availability</a></div>',
+        //'#suffix' => '</div>',
+        //'#options' => array('@NBC UNI' => '@NBC UNI'),
+        '#default_value' => $displayname,
+        //'#chosen' => TRUE,
+      );
+      }
+  }
+  if((!empty($gid)) && !in_array('Messaging Administrator', $user->roles)){
+    $form['group']['email'] = array(
+      '#title' => t('Email'),
+      '#type' => 'hidden',
+      '#value' => $email_primary,
+      '#prefix' => '<div class="field-row email-label"><span class="form-required" title="This field is required."></span><label for="edit-email">Email</label>',
+      '#suffix' => '<div class="mail">'.$email_primary.'</div></div>',
+    );
+  }
+  else {
+    if(!in_array('Messaging Administrator', $user->roles)){
+      $form['group']['email'] = array(
+        '#title' => t('Email'),
+        '#type' => 'textfield',
+        '#default_value' => $email_primary,
+        '#required' => TRUE,
+        '#prefix' => '<div class="field-row email end_user"><div class ="field-row helper-text">We\'ve recommended an email name below. Feel free to customize.</div><span title="This field is required." class="form-required">*</span>',
+      );
+      $form['group']['email_domains'] = array(
+        '#title' => t(''),
+        '#type' => 'select',
+        //'#prefix' => '<div class="field-row email_domains">',
+        //'#suffix' => '</div>',
+        //'#suffix' => '<!--div class="mailsuffix">@nbcuni.com</div--><label style="display: none;" id="enter_email" class="error" generated="true" for="edit-email">Enter a valid email</label><label for="edit-email" generated="true" class="error_email" style="display:none;">Email id already exists!</label><label style="display:none;" for="edit-email" generated="true" class="success">Available!</label><div class="check_availability_button_email"><button class="small_button hover-blue" onclick="javascript: return false;">Check Availability</button><div class="ajax_throbber" style="display: none;"><img src="/sites/all/themes/idmtheme/images/ajax-loader.gif"></div><div class="available_email"></div><div class="taken_email"></div></div></div>',
+        '#suffix' => '<label style="display: none;" id="enter_email" class="error" generated="true" for="edit-email">Enter a valid email</label><label for="edit-email" generated="true" class="error_email" style="display:none;">Email id already exists!</label><label style="display:none;" for="edit-email" generated="true" class="success">Available!</label><div class="check_availability_button_email"><button class="small_button hover-blue" onclick="javascript: return false;">Check Availability</button><div class="ajax_throbber" style="display: none;"><img src="/sites/all/themes/idmtheme/images/ajax-loader.gif"></div><div class="available_email"></div><div class="taken_email"></div></div></div><div class="check_availability_button_email_mobile check_availability_mobile"><a href="#" onclick="javascript: return false;">Check Availability</a></div>',
+        '#options' => array('@comcastsportsnet.com' => '@comcastsportsnet.com', '@golfchannel.com' => '@golfchannel.com', '@nbcuni.com' => '@nbcuni.com', '@necn.com' => '@necn.com', '@sny.tv' => '@sny.tv', '@telemundo.com' => '@telemundo.com', '@cnbc.com' => '@cnbc.com', '@msnbc.com' => '@msnbc.com'),
+        '#default_value' => $email_domains,
+        '#chosen' => TRUE,
+      );
+    } else {
+      $form['group']['email'] = array(
+        '#title' => t('Email'),
+        '#type' => 'textfield',
+        '#default_value' => $email_primary,
+        '#required' => TRUE,
+        '#prefix' => '<div class="field-row email"><div class ="field-row helper-text">We\'ve recommended an email name below. Feel free to customize.</div><span title="This field is required." class="form-required">*</span>',
+        '#suffix' => '<!--div class="mailsuffix">@nbcuni.com</div--><label style="display: none;" id="enter_email" class="error" generated="true" for="edit-email">Enter a valid email</label><label for="edit-email" generated="true" class="error_email" style="display:none;">Email id already exists!</label><label style="display:none;" for="edit-email" generated="true" class="success">Available!</label><div class="check_availability_button_email"><button class="small_button hover-blue" onclick="javascript: return false;">Check Availability</button><div class="ajax_throbber" style="display: none;"><img src="/sites/all/themes/idmtheme/images/ajax-loader.gif"></div><div class="available_email"></div><div class="taken_email"></div></div></div><div class="check_availability_button_email_mobile check_availability_mobile"><a href="#" onclick="javascript: return false;">Check Availability</a></div>',
+      );
+    }
+  }
+
+    $form['group']['description'] = array(
+      '#title' => t('Description'),
+      '#type' => 'textarea',
+      '#required' => TRUE,
+      '#default_value' => $description,
+      '#resizable' => FALSE,
+      '#prefix' => '<div class="field-row description"><span title="This field is required." class="form-required">*</span>',
+      '#suffix' => '</div>',
+      '#attributes' => array ('maxlength' => array ('120')),
+    );
+  if (in_array('Messaging Administrator', $user->roles)) {
+    $form['group']['alternate_email_input'] = array(
+      '#title' => t('Alternate Email Address'),
+      '#type' => 'textfield',
+      '#prefix' => '<div class="field-row alternate_email_input"><span title="This field is required." class="form-required"></span>',
+      '#suffix' => '<label style="display: none;" id="enter_alternateemail_unique" class="error" generated="true" for="edit-alternate-email-input">Please enter unique email ids!</label><label style="display: none;" id="enter_alternateemail" class="error" generated="true" for="edit-alternate-email-input">Enter a valid email</label><label for="edit-alternateemail" generated="true" class="error_alternateemail" style="display:none;">Email id already exists!</label><label style="display:none;" for="edit-alternateemail" generated="true" class="alternatesuccess">Available!</label><div class="hover-green add-icon address_plus_icon"><div class="icon-plus_icon"></div></div><div class="check_availability_button_alteremail"><button class="small_button hover-blue" onclick="javascript: return false;">Check Availability</button><div class="ajax_throbber" style="display: none;"><img src="/sites/all/themes/idmtheme/images/ajax-loader.gif"></div><div class="available_alternateemail"></div><div class="taken_alternateemail"></div></div></div><div class="check_availability_button_alteremail_mobile check_availability_mobile"><a href="#" onclick="javascript: return false;">Check Availability</a></div><div id="alternateemails">'.$alternateemails.'</div>',
+    );
+
+    $form['group']['new_alternate_email'] = array(
+      '#type' => 'hidden',
+      '#attributes' => array ('id' => array ('new_alternate_email')),
+    );
+    $form['group']['new_alternate_email_added'] = array(
+      '#type' => 'hidden',
+      '#attributes' => array ('id' => array ('new_alternate_email_added')),
+    );
+    $form['group']['new_alternate_email_del'] = array(
+      '#type' => 'hidden',
+      '#attributes' => array ('id' => array ('new_alternate_email_del')),
+    );
+  }
+  if(!empty($gid)) {
+    if (in_array('Messaging Administrator', $user->roles)) {
+        $exp_options = array('' => 'Do Not Change', 6 => '6 months', 12 => '12 months', 18 => '18 months', 0 => 'Never');
+        $def_exp = '';
+    } else {
+        $exp_options = array('' => 'Do Not Change', 6 => '6 months', 12 => '12 months', 18 => '18 months');
+        $def_exp = '';
+    }
+  } else {
+      if (in_array('Messaging Administrator', $user->roles)) {
+          $exp_options = array(6 => '6 months', 12 => '12 months', 18 => '18 months', 0 => 'Never');
+          $def_exp = 0;
+      } else {
+          $exp_options = array(6 => '6 months', 12 => '12 months', 18 => '18 months');
+          $def_exp = 12;
+      }
+  }
+  if(!empty($gid)) {
+    $expirationdate_label = (empty($expirationdate)) ? 'Never' : $expirationdate;
+    $form['group']['expiration_date'] = array(
+      '#title' => t('Group Expiration'),
+      '#type' => 'select',
+      '#options' => $exp_options,
+      '#default_value' => $def_exp,
+      '#prefix' => '<div class="field-row expiration_date"><span title="This field is required." class="form-required"></span>',
+      '#suffix' => '<div id="expirationdate">'.$expirationdate_label.'</div></div>',
+      '#chosen' => TRUE,
+    );
+  } else {
+    $form['group']['expiration_date'] = array(
+      '#title' => t('Group Expiration'),
+      '#type' => 'select',
+      '#options' => $exp_options,
+      '#default_value' => $def_exp,
+      '#prefix' => '<div class="field-row expiration_date"><span title="This field is required." class="form-required"></span>',
+      '#suffix' => '<div id="expirationdate">'.$expirationdate.'</div></div>',
+      '#chosen' => TRUE,
+    );
+  }
+
+  if (in_array('Messaging Administrator', $user->roles)) {
+    $form['group']['comments'] = array(
+      '#title' => t('Comments'),
+      '#type' => 'textarea',
+      '#required' => FALSE,
+      '#default_value' => $comments,
+    '#resizable' => FALSE,
+      '#prefix' => '<div class="field-row comments"><span title="This field is required." class="form-required"></span>',
+      '#suffix' => '</div>',
+      '#attributes' => array ('maxlength' => array ('120')),
+    );
+  }
+
+    $form['privacy'] = array(
+      '#type' => 'fieldset',
+      '#attributes' => array (
+      'class' => array (
+      'privacy-info'
+      )
+      ),
+    );
+    $form['privacy']['title'] = array(
+      '#markup' => 'Privacy',
+      '#prefix' => '<div class="title"><h2>',
+      '#suffix' => '</h2></div>'
+    );
+    $form['privacy']['membership_types'] = array(
+      '#title' => t('Membership Type'),
+      '#type' => 'radios',
+      '#description' => t('Who can see and/or request access?'),
+      '#options' => array(
+      'public' => t('<div class="icon-eye_icon icon"></div> Public <div class="membership">Owner administered. Group Owners must explicitly add new members. New members may request access request to the group, but cannot freely join without the owners approval.</div>'),
+      'private' => t('<div class="icon-lock_icon icon"></div> Private <div class="membership">Owner administered and hidden. Group owners must explicitly add new members. New members may still request access to the group but cannot freely join without the owners approval. Group Membership is hidden.</div>')),
+      '#default_value' => $membershippolicy,
+      '#prefix' => '<div class="field-row membership_types"><span title="This field is required." class="form-required"></span>',
+      '#suffix' => '</div>',
+      '#attributes' => array('class' => array('styled')),
+    );
+    if (in_array('Messaging Administrator', $user->roles)) {
+      $form['privacy']['hide_group_membership'] = array(
+        '#title' => t('Hide Group Membership'),
+        '#type' => 'radios',
+        '#options' => array('TRUE' => t('True: Allows to hide group member'), 'FALSE' => t('False: Allows group member visibility')),
+        '#default_value' => $hide_group_membership,
+        '#prefix' => '<div class="field-row hide-group-membership"><span title="This field is required." class="form-required"></span>',
+        '#suffix' => '</div>',
+        '#attributes' => array('class' => array('styled'), 'disabled' => array('true')),
+      );
+    } else {
+    $form['privacy']['hide_group_membership'] = array(
+      '#type' => 'item',
+      '#title' => t('Hide Group Membership'),
+      '#markup' => "<div class='hide-group-membership-content-public' style='display: ".$hide_group_membership_public."'>You selected Public membership type. The group's membership will be visible.</div><div class='hide-group-membership-content-private' style='display: ".$hide_group_membership_private."'>You selected Private membership type. The group's membership will be hidden.</div>",
+      '#prefix' => '<div class="field-row hide-group-membership"><span title="This field is required." class="form-required"></span>',
+      '#suffix' => '</div>',
+    );
+    }
+  if(!empty($gid)) {
+    if (in_array('Messaging Administrator', $user->roles)) {
+      $form['privacy']['hide_from_addresslists'] = array(
+        '#title' => t('Hide From Address Lists'),
+        '#type' => 'radios',
+        '#options' => array('TRUE' => t('Hide group in address lists'), 'FALSE' => t('Allows group visibility in address lists')),
+        '#default_value' => $hidefromaddresslists,
+        '#prefix' => '<div class="field-row hide_from_addresslists"><span title="This field is required." class="form-required"></span>',
+        '#suffix' => '</div>',
+        '#attributes' => array('class' => array('styled')),
+      );
+    } else {
+      /*  if ($hidefromaddresslists == 'FALSE') {
+          $hidefromaddressliststext = 'Allows group visibility in address lists';
+        } else {
+          $hidefromaddressliststext = 'Hide group in address lists';
+        }
+        $form['privacy']['hide_from_addresslists'] = array(
+          '#title' => t('Hide From Address Lists'),
+          '#type' => 'item',
+           //'#default_value' => 'abc'.$hidefromaddresslists,
+          '#markup' => "<div class='hide-group-membership-content-public'>".$hidefromaddressliststext."</div>",
+          '#prefix' => '<div class="field-row hide_from_addresslists"><span title="This field is required." class="form-required"></span>',
+          '#suffix' => '</div>',
+          //'#attributes' => array('class' => array('styled')),
+        );*/
+    }
+  } else {
+      if (in_array('Messaging Administrator', $user->roles)) {
+        $form['privacy']['hide_from_addresslists'] = array(
+          '#title' => t('Hide From Address Lists'),
+          '#type' => 'radios',
+          '#options' => array('TRUE' => t('Hide group in address lists'), 'FALSE' => t('Allows group visibility in address lists')),
+          '#default_value' => $hidefromaddresslists,
+          '#prefix' => '<div class="field-row hide_from_addresslists"><span title="This field is required." class="form-required"></span>',
+          '#suffix' => '</div>',
+          '#attributes' => array('class' => array('styled')),
+        );
+      }
+  }
+  if(!empty($gid)) {
+    if ($gtype == 'DLG' && !$is_messaging_admin) {
+      $gtype_options = array('DLG' => 'Delegation');
+    } else {
+      $gtype_options = array('DST' => 'Distribution', 'DLG' => 'Delegation');
+    }
+
+    $form['privacy']['delegation_group'] = array(
+      '#title' => t('Group Type'),
+      '#type' => 'select',
+      '#options' => $gtype_options,
+      '#default_value' => $gtype,
+      '#prefix' => '<div class="field-row delegation_group"><span title="This field is required." class="form-required"></span>',
+      '#suffix' => '</div>',
+      '#chosen' => TRUE,
+    );
+  } else {
+    $form['privacy']['delegation_group'] = array(
+      '#title' => t('Group Type'),
+      '#type' => 'select',
+      '#options' => array('DST' => 'Distribution', 'DLG' => 'Delegation'),
+      '#default_value' => $gtype,
+      '#prefix' => '<div class="field-row delegation_group"><span title="This field is required." class="form-required"></span>',
+      '#suffix' => '</div>',
+      '#chosen' => TRUE,
+    );
+  }
+  $allowedtosend_list = empty($allowedtosend_list) ? '' : $allowedtosend_list;
+    $form['privacy']['restrictions'] = array(
+    '#title' => t('List Delivery Restriction (who can send)'),
+      '#type' => 'textfield',
+      '#required' => FALSE,
+      '#autocomplete_path' => 'autocomplete/groupanduser/restrictions',
+      '#prefix' => '<div class="field-row restrictions"><span title="This field is required." class="form-required"></span>',
+      '#suffix' => '<!--div class="icon-search_icon"></div--><!--button class="small_button hover-blue" onclick="javascript: return false;">Search</button--><label class="error" generated="true" for="edit-restrictions" style="display: none;">Please select different restriction user.</label></div><div id="group_restrictions">'.$allowedtosend_list.'</div><div id="group_restrictions_count" style="display:none;">'.$allowedtosend_list_count.'</div>'
+    );
+    $form['privacy']['restrictions_hidden'] = array(
+      '#type' => 'hidden',
+      '#default_value' => '',
+      '#attributes' => array ('id' => 'restrictions_id'),
+    );
+    $form['privacy']['restrictions_sso'] = array(
+      '#type' => 'hidden',
+      '#attributes' => array ('id' => array ('restrictions_sso')),
+    );
+    $form['privacy']['restrictions_names'] = array(
+      '#type' => 'hidden',
+      '#attributes' => array ('id' => array ('restrictions_names')),
+    );
+    $form['privacy']['restrictions_sso_del'] = array(
+      '#type' => 'hidden',
+      '#attributes' => array ('id' => array ('restrictions_sso_del')),
+    );
+
+  if(!empty($gid)) {
+   $form['privacy']['security_group'] = array(
+      '#title' => t('Security Group'),
+      '#type' => 'radios',
+      '#options' => array('TRUE' => t('Group is integrated with SSO'), 'FALSE' => t('Group is not integrated with SSO')),
+      '#default_value' => $securitygroup,
+      '#prefix' => '<div class="field-row security_group"><span title="This field is required." class="form-required"></span>',
+      '#suffix' => '</div>',
+      '#attributes' => array('class' => array('styled')),
+    );
+  } else {
+    if (in_array('Messaging Administrator', $user->roles)) {
+      $form['privacy']['security_group'] = array(
+        '#title' => t('Security Group'),
+        '#type' => 'radios',
+        '#options' => array('TRUE' => t('Group is integrated with SSO'), 'FALSE' => t('Group is not integrated with SSO')),
+        '#default_value' => 'FALSE',
+        '#prefix' => '<div class="field-row security_group"><span title="This field is required." class="form-required"></span>',
+        '#suffix' => '</div>',
+        '#attributes' => array('class' => array('styled')),
+      );
+    }
+  }
+
+    $form['managers'] = array(
+      '#type' => 'fieldset',
+      '#attributes' => array (
+        'class' => array ('manager-info')
+      ),
+    );
+    $form['managers']['title'] = array(
+      '#markup' => 'Members and Managers',
+      '#prefix' => '<div class="title"><h2>',
+      '#suffix' => '</h2></div>'
+    );
+    $form['managers']['primary_manager'] = array(
+      '#title' => t('Primary Manager'),
+      '#type' => 'item',
+      '#markup' => "<div class='primay_manager_self'>".$primary_manager."</div><div class='primay_manager_other'></div>",
+      '#prefix' => '<div class="field-row primary-manager"><span title="This field is required." class="form-required"></span>',
+      '#suffix' => '</div>'
+    );
+  if (!in_array('Messaging Administrator', $user->roles) && empty($gid)) {
+    $form['managers']['approver'] = array(
+      '#type' => 'item',
+      '#title' => t('Approver'),
+      '#markup' => "<div class='approver-content'></div>",
+      '#prefix' => '<div class="field-row approver"><span title="This field is required." class="form-required"></span>',
+      '#suffix' => '</div>',
+    );
+    $form['managers']['approver_sso'] = array(
+      '#type' => 'hidden',
+      '#value' => '',
+      '#attributes' => array('id'=>'approver_sso')
+    );
+    $form['managers']['approvertime'] = array(
+      '#type' => 'item',
+      '#title' => t('Approver Time'),
+      '#markup' => "<div class='approver-content'>The approver will be notified by email and has 10 days time to approve your request.<br><br>Once approved, the account will be automatically created. You will receive an email confirmation.</div>",
+      '#prefix' => '<div class="field-row approvertime"><span title="This field is required." class="form-required"></span>',
+      '#suffix' => '</div>',
+    );
+  }
+
+  //Add a Manager start
+  $form['managers']['add_new_manager'] = array(
+    '#title' => t('Managers'),
+      '#type' => 'textfield',
+      '#required' => FALSE,
+      '#default_value' => '',
+      '#autocomplete_path' => 'autocomplete/groupanduser/additionalmanager',
+      '#prefix' => '<div class="field-row add_new_manager"><span title="This field is required." class="form-required"></span>',
+      '#suffix' => '<!--div class="icon-search_icon"></div--><!--button class="small_button hover-blue" onclick="javascript: return false;">Search</button--><label class="error" generated="true" for="edit-add-new-manager" style="display: none;">Please select different manager.</label></div><div id="group_managers_all">'.$additional_managers.'</div>'
+    );
+    $form['managers']['managers_hidden'] = array(
+      '#type' => 'hidden',
+      '#default_value' => '',
+      '#attributes' => array ('id' => 'managers_id'),
+    );
+    if((empty($gid)) && !in_array('Messaging Administrator', $user->roles)){
+      $form['managers']['new_manager_sso'] = array(
+        '#type' => 'hidden',
+          '#default_value' => $user_sso,
+        '#attributes' => array ('id' => array ('new_manager_sso')),
+      );
+    } else {
+      $form['managers']['new_manager_sso'] = array(
+        '#type' => 'hidden',
+        '#attributes' => array ('id' => array ('new_manager_sso')),
+      );
+    }
+    $form['managers']['new_manager_names'] = array(
+      '#type' => 'hidden',
+      '#attributes' => array ('id' => array ('new_manager_names')),
+    );
+    $form['managers']['new_manager_sso_del'] = array(
+      '#type' => 'hidden',
+      '#attributes' => array ('id' => array ('new_manager_sso_del')),
+    );
+    if((empty($gid)) && in_array('Messaging Administrator', $user->roles)){
+      $form['managers']['new_managers_count'] = array(
+        '#type' => 'hidden',
+        '#value' => $additional_managers_count,
+        '#attributes' => array ('id' => array ('new_managers_count')),
+      );
+    }
+    //Add a Manager end
+  if(!empty($gid)) {
+    //Add a Member start
+  $download_link = "/download_group_members/$gid";
+  if($members_count > 0){
+  $download_members_display ="display:block";
+  }else{
+  $download_members_display ="display:none";
+  }
+
+  $form['managers']['add_new_member'] = array(
+    '#title' => t('Add a Member'),
+      '#type' => 'textfield',
+      '#required' => FALSE,
+      '#autocomplete_path' => 'autocomplete/member',
+      '#prefix' => '<div class="field-row add_new_member"><span title="This field is required." class="form-required"></span>',
+      '#suffix' => '<!--div class="icon-search_icon"></div--><!--button class="small_button hover-blue" onclick="javascript: return false;">Search</button--><label class="error" generated="true" for="edit-add-new-member" style="display: none;">Please select different member.</label><button class="small_button hover-blue" id="member_csv_import_button">Import</button></div><div class="member"><div class="download-members" style ='.$download_members_display.'> <a href='.$download_link.'><input id="download-group" class="desktop-downloadmember" type="button" value="Download Members"></a></div></div><div id="group_members_all">'.$additional_members.'</div><div id="group_members_count" style="display:none;">'.$members_count.'</div>'
+    );
+    $form['managers']['members_hidden'] = array(
+      '#type' => 'hidden',
+      '#default_value' => '',
+      '#attributes' => array ('id' => 'members_id'),
+    );
+    $form['managers']['new_member_sso'] = array(
+      '#type' => 'hidden',
+      '#attributes' => array ('id' => array ('new_member_sso')),
+    );
+    $form['managers']['new_member_names'] = array(
+      '#type' => 'hidden',
+      '#attributes' => array ('id' => array ('new_member_names')),
+    );
+    $form['managers']['new_member_sso_del'] = array(
+      '#type' => 'hidden',
+      '#attributes' => array ('id' => array ('new_member_sso_del')),
+    );
+    //Add a Member end
+  }
+
+    $form['managers']['usertype'] = array(
+      '#type' => 'hidden',
+      '#value' => isset($info['usertype']) ? $info['usertype'] : '',
+      '#attributes' => array('id' => array('usertype')),
+    );
+    $form['managers']['submit'] = array (
+      '#type' => 'submit',
+      '#value' => t($buttontxt),
+    '#attributes' => array('class' => array('small_button hover-blue')),
+      '#prefix' => '<div class="group-submit-buttons" >',
+    );
+    $form['managers']['cancel'] = array (
+      '#type' => 'button',
+      '#value' => t('Cancel'),
+      '#attributes' => array('class' => array('small_button hover-grey')),
+      '#suffix' => '</div>',
+    );
+
+    if(!empty($gid)){
+     $form['#theme'] = 'edit_group';
+    $form['#suffix'] = '<div class="member_csv_form_wrapper" ><form id="member_csv_form" action="/upload_group_members" method="post" enctype="multipart/form-data" class="list-info">
+            <div class="form-item form-type-textfield form-item-file-upload" style="display:none;">
+            <label for="edit-displayname">Upload Member CSV</label>
+            <div class="file-uploader"><input type="file" size="60" name="member_csv"><img id="helpquestion" width="32px;" height="32px;" src="/sites/all/themes/idmtheme/images/question.png" style="margin-left:-13%;margin-top:8px;cursor:pointer;" alt="Help csv upload" title="Help csv upload">
+            <input type="submit" value="Upload" class="small_button hover-blue form-submit">
+            <div class="ajax_throbber" style="display: none;"><img src="/sites/all/themes/idmtheme/images/ajax-loader.gif" style="margin-left:2%;"></div>
+            <div class="error" style="display:none; clear: both; color:#d12a2a; margin-left:19%;">Please upload valid CSV file.</div>
+            <div class="dataerror" style="display:none; clear: both; color:#d12a2a; margin-left:19%;">You have uploaded Invalid data.</div>
+            <div class="success" style="display:none; clear: both; color:#008000; margin-left:19%;"></div>
+            </div></div>
+            </form></div>';
+    }
+    return $form;
+  }
+}
+
+/**
+ * Callback function to validate and save group
+ */
+function idm_groups_create_group_validate($form, &$form_state) {
+  global $user;
+  $group_id = $form_state['values']['gid'];
+  $is_messaging_admin = FALSE;
+  //$gtype = empty($form_state['values']['delegation_group']) ? 'DST' : $form_state['values']['delegation_group'];
+
+  if(empty($group_id)) {
+      //Create group form
+      $requestor_id = empty($user->name) ? '' : $user->name;
+      date_default_timezone_set(variable_get('default_timezone', DEFAULT_TIME_ZONE));
+
+      $account = new stdClass();
+      //$account->schemas = array ('urn:scim:schemas:core:1.0');
+      $account->id = $group_id;
+      $account->requestor = $requestor_id;
+      if (in_array('Messaging Administrator', $user->roles)) {
+        $account->role = 'Messaging Administrator';
+        $is_messaging_admin = TRUE;
+      }
+      $account->displayName = $is_messaging_admin ?  $form_state['values']['displayname'] : $form_state['values']['displayname_parent'].' '.$form_state['values']['displayname'];
+      $account->description = $form_state['values']['description'];
+
+      $email = new stdClass();
+      if(!empty($form_state['values']['email_domains'])) {
+	      $email->value = $form_state['values']['email'].$form_state['values']['email_domains'];
+      } else {
+	      $email->value = $form_state['values']['email'];
+      }
+      $email->type = 'primary';
+      $account->emails = array($email);
+
+      //alternate email start
+      $alternateemails_add = array();
+      if(!empty($form_state['values']['new_alternate_email'])) {
+        $additional_email = $form_state['values']['new_alternate_email'];
+        $additional_email_array = explode(',', $additional_email);
+        $m = 0;
+        foreach($additional_email_array as $value) {
+          $new_alternate_email = $value;
+            $alternateemails_add[$m]['value'] = $new_alternate_email;
+            $alternateemails_add[$m]['op'] = 'add';
+          $m++;
+        }
+      }
+      $alternateemails_remove = array();
+      if(!empty($form_state['values']['new_alternate_email_del'])) {
+        $additional_email_del = $form_state['values']['new_alternate_email_del'];
+        $additional_email_del_array = explode(',', $additional_email_del);
+        if(!isset($m)) {
+            $m = 0;
+        }
+        $n = $m+1;
+        foreach($additional_email_del_array as $value_del) {
+          $new_alternate_email_del = $value_del;
+            $alternateemails_remove[$n]['value'] = 'uid='.$new_alternate_email_del.',ou=worker,dc=tfayd,dc=com';
+            $alternateemails_remove[$n]['op'] = 'remove';
+          $n++;
+        }
+      }
+
+      $alternateemails_all = array_merge($alternateemails_add, $alternateemails_remove);
+      if (!empty($alternateemails_all)) {
+        $account->alternateemails = $alternateemails_all;
+      }
+      //alternate email end
+
+      //Manage name calculation
+      if((empty($gid)) && in_array('Messaging Administrator', $user->roles)){
+        $selected_user_managerid = '';
+      } else {
+        if($form_state['values']['createfor'] != 0 && !empty($form_state['values']['groupmanager'])){
+          //if someone else then others as approver. (ie primary manager)
+          //some one else manager case
+          preg_match('/[\w\s]+\(([\d]+)\)*/', $form_state['values']['groupmanager'], $sso);
+          $info = _idm_profile_get_user($sso[1]);
+          $manager_sso = '';
+          $user_type = '';
+          $info['usertype'] = isset($info['usertype']) ? $info['usertype'] : '';
+          $user_type = $info['usertype'];
+          //if ($user_type == 'employee') {
+            $manager_sso = isset($info['sso']) ? $info['sso'] : '';
+          //} elseif ($user_type == 'contractor' || $user_type == 'functional') {
+            //$manager_sso = $info['managerid'];
+          //}
+          $selected_user_managerid = $sso[1];
+          $info_manager = _idm_profile_get_user($selected_user_managerid);
+          //$manager_email = $info_manager['email']['work'];
+          //$manager_displayname = $info_manager['displayname'];
+        } else {
+          //Myself manager case
+          $info = _idm_profile_get_user($requestor_id);
+          $manager_sso = '';
+          $user_type = '';
+          $info['usertype'] = isset($info['usertype']) ? $info['usertype'] : '';
+          $user_type = $info['usertype'];
+          $manager_sso = !empty($info['sso']) ? $info['sso'] : '';
+          $selected_user_managerid = $manager_sso;
+          $info_manager = _idm_profile_get_user($selected_user_managerid);
+          //$manager_email = $info_manager['email']['work'];
+          //$manager_displayname = $info_manager['displayname'];
+          $selected_user_managerid = $requestor_id;
+        }
+      }
+
+      $owner_add = array();
+      if(!empty($selected_user_managerid)) {
+        $owner_add[0]['value'] = 'uid='. $selected_user_managerid.',ou=worker,dc=tfayd,dc=com';
+        $owner_add[0]['op'] = 'add';
+        $owner_add[0]['primary'] = 'true';
+      }
+      if(!empty($form_state['values']['new_manager_sso'])) {
+        $additional_manager = $form_state['values']['new_manager_sso'];
+        $additional_manager_array = explode(',', $additional_manager);
+        $i = 1;
+        foreach($additional_manager_array as $value) {
+          $additional_manager_sso = $value;
+          $mystring = $additional_manager_sso;
+          $findme   = 'g';
+          $pos = strpos($mystring, $findme);
+          if ($pos !== false) {//group id
+            $owner_add[$i]['value'] = 'cn='.$additional_manager_sso.',ou=Groups,dc=tfayd,dc=com';
+            $owner_add[$i]['op'] = 'add';
+          } else {//user id
+            $owner_add[$i]['value'] = 'uid='.$additional_manager_sso.',ou=worker,dc=tfayd,dc=com';
+            $owner_add[$i]['op'] = 'add';
+          }
+          $i++;
+        }
+      }
+
+      $owner_remove = array();
+      if(!empty($form_state['values']['new_manager_sso_del'])) {
+        $additional_manager_del = $form_state['values']['new_manager_sso_del'];
+        $additional_manager_del_array = explode(',', $additional_manager_del);
+        if(!isset($i)) {
+            $i = 0;
+        }
+        $j = $i+1;
+        foreach($additional_manager_del_array as $value_del) {
+          $additional_manager_sso_del = $value_del;
+          $mystring_del = $additional_manager_sso_del;
+          $findme_del   = 'g';
+          $pos_del = strpos($mystring_del, $findme_del);
+          if ($pos_del !== false) {//group id
+            $owner_remove[$j]['value'] = 'cn='.$additional_manager_sso.',ou=Groups,dc=tfayd,dc=com';
+            $owner_remove[$j]['op'] = 'remove';
+          } else {//user id
+            $owner_remove[$j]['value'] = 'uid='.$additional_manager_sso_del.',ou=worker,dc=tfayd,dc=com';
+            $owner_remove[$j]['op'] = 'remove';
+          }
+          $j++;
+        }
+      }
+      if(empty($selected_user_managerid)) {
+        $owner_add[1]['primary'] = 'true';
+      }
+
+      $owner_all = array_merge($owner_add, $owner_remove);
+      if (!empty($owner_all)) {
+        $account->owners = $owner_all;
+      }
+
+      //$account->ou = 'ou=groups,dc=tfayd,dc=com';
+      $account->membershippolicy = $form_state['values']['membership_types'];
+
+      if($form_state['values']['expiration_date'] != 0) {
+          $account->expiration = 'TRUE';
+          $months = $form_state['values']['expiration_date'];
+          $account->expirationdate = date("d-M-Y", idm_portal_strtotime("+".$months." month"));
+      } else {
+        if (in_array('Messaging Administrator', $user->roles)) {
+          $account->expiration = 'FALSE';
+        }
+        $account->expirationdate = '';
+      }
+
+      if($form_state['values']['membership_types'] == 'public') {//according to membership type
+        $account->hidemembership = 'FALSE';
+      } else {
+        $account->hidemembership = 'TRUE';
+      }
+
+      $account->hidefromaddresslists = empty($form_state['values']['hide_from_addresslists']) ? 'FALSE' : $form_state['values']['hide_from_addresslists'];
+      $gtype = empty($form_state['values']['delegation_group']) ? 'DST' : $form_state['values']['delegation_group'];
+      $account->type = $gtype;
+      $account->securitygroup = empty($form_state['values']['security_group']) ? '' : $form_state['values']['security_group'];
+      if(empty($group_id)) {
+        $account->orgsegmentid = '60000008';
+        $account->organizationid = '604200011';
+      }
+      if (in_array('Messaging Administrator', $user->roles)) {
+	$account->comments = $form_state['values']['comments'];
+      }
+
+      $allowedtosend = array();
+      $restrictions = $form_state['values']['restrictions_sso'];
+      if(!empty($restrictions)) {
+        $restrictions_array = explode(',', $restrictions);
+        $i = 0;
+        foreach($restrictions_array as $value) {
+          $restrictions_user_sso = $value;
+          $mystring = $restrictions_user_sso;
+          $findme   = 'g';
+          $pos = strpos($mystring, $findme);
+          if ($pos !== false) {//group id
+              $gid = $restrictions_user_sso;
+              $allowedtosend[$i]['value'] = 'cn='.$restrictions_user_sso.',ou=Groups,dc=tfayd,dc=com';
+              $group_info = _idm_groups_get_group_info($gtype,$gid);
+              if(isset($group_info['email'])) {
+                if(isset($group_info['email']['primary'])) {
+                  $allowedtosend_email = new stdClass();
+                  $allowedtosend_email->value = $group_info['email']['primary'];
+                  $allowedtosend_email->type = 'work';
+                  $allowedtosend[$i]['emails'] = array($allowedtosend_email);
+                } else {
+                  $allowedtosend[$i]['emails'] = '';
+                }
+              }
+              $group_info['displayName'] = empty($group_info['displayName']) ? '' : $group_info['displayName'];
+              $allowedtosend[$i]['display'] = $group_info['displayName'];
+              $i++;
+          } else {//user SSO
+              $allowedtosend[$i]['value'] = 'uid='.$restrictions_user_sso.',ou=worker,dc=tfayd,dc=com';
+              $info = _idm_profile_get_user(trim($restrictions_user_sso));
+              if(isset($info['email'])) {
+                if(isset($info['email']['work'])) {
+                  $allowedtosend_email = new stdClass();
+                  $allowedtosend_email->value = $info['email']['work'];
+                  $allowedtosend_email->type = 'work';
+                  $allowedtosend[$i]['emails'] = array($allowedtosend_email);
+                } else {
+                  $allowedtosend[$i]['emails'] = '';
+                }
+              }
+              $info['displayName'] = empty($info['displayName']) ? '' : $info['displayName'];
+              $allowedtosend[$i]['display'] = $info['displayname'];
+              $i++;
+          }
+        }
+      }
+      if(!empty($allowedtosend)) {
+        $account->allowedtosend = $allowedtosend;
+      }
+
+      $account->ou = 'ou=groups,dc=tfayd,dc=com';
+
+      $url = variable_get('rest_api_check_url', 'http://3.3.175.127:8080/idm-api/rest').'/internal/groups/create';
+      $method = 'POST';
+      $user_json = json_encode($account);
+      $result = idm_profile_execute_curl($url, $user_json, $method);
+      $result_obj = json_decode($result);
+      //returning result
+      if(isset($result_obj->custom_transactionId)){  //approval needed
+        ctools_object_cache_clear('api', 'group_data_mygroups');
+        ctools_object_cache_clear('api', 'group_data_mymemberships');
+        $success_message = "Your Group request has been sent for approval to Group Managers.";
+        drupal_set_message(filter_xss('<img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">'.$success_message, $allowed_tags = array('img')));
+        //drupal_set_message(filter_xss('<img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">'.$success_message.'<br />USER JSON<pre>' . print_r($user_json, TRUE) . '</pre>'.'<br />RESULT<pre>' . print_r($result, TRUE) . '</pre>', $allowed_tags = array('img')));
+        //drupal_set_message($success_message);
+        //drupal_set_message('USER JSON<pre>' . print_r($user_json, TRUE) . '</pre>');
+        //drupal_set_message('RESULT<pre>' . print_r($result, TRUE) . '</pre>');
+        drupal_goto('groups');
+      } elseif(isset($result_obj->id) && isset($result_obj->displayName)) {  //No approval needed
+        ctools_object_cache_clear('api', 'group_data_mygroups');
+        ctools_object_cache_clear('api', 'group_data_mymemberships');
+        ctools_object_cache_clear('api', 'group_info_'.$result_obj->id);
+        $success_message = "Group has been created successfully. Group id: ".$result_obj->id.", Display name: ".$result_obj->displayName;
+        drupal_set_message(filter_xss('<img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">'.$success_message, $allowed_tags = array('img')));
+        //drupal_set_message(filter_xss('<img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">'.$success_message.'<br />USER JSON<pre>' . print_r($user_json, TRUE) . '</pre>'.'<br />RESULT<pre>' . print_r($result, TRUE) . '</pre>', $allowed_tags = array('img')));
+        //drupal_set_message($success_message);
+        //drupal_set_message('USER JSON<pre>' . print_r($user_json, TRUE) . '</pre>');
+        //drupal_set_message('RESULT<pre>' . print_r($result, TRUE) . '</pre>');
+        drupal_goto('group/DST/'.$result_obj->id);
+      } elseif(!PROD){
+        form_set_error('', '<img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">'.t('Error occurred during new group creation request. Please contact the <a href="mailto:'.variable_get('idm_contact_emailid','identityservicessupportIDM@nbcuni.com').'">IdM Support Team</a> for assistance.'));
+        //form_set_error('', t('Error occurred during new group creation request. Please contact the <a href="mailto:identityservicessupportIDM@nbcuni.com">IdM Support Team</a> for assistance.'));
+        //drupal_set_message('DEBUG Info<br>URL<pre>' . print_r($url, TRUE) . '</pre>');
+        //IP-1134
+        //drupal_set_message(filter_xss('<img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">'.'<br />USER JSON<pre>' . print_r($user_json, TRUE) . '</pre>'.'<br />RESULT<pre>' . print_r($result, TRUE) . '</pre>', $allowed_tags = array('img')));
+        //drupal_set_message('USER JSON<pre>' . print_r($user_json, TRUE) . '</pre>');
+        //drupal_set_message('RESULT<pre>' . print_r($result, TRUE) . '</pre>');
+      }
+    } else {
+        //Edit group form validation and submission
+        $gtype = empty($form_state['values']['delegation_group']) ? 'DST' : $form_state['values']['delegation_group'];
+        $group_array = _idm_groups_get_group_info($gtype,$group_id);
+        $requestor_id = empty($user->name) ? '' : $user->name;
+        date_default_timezone_set(variable_get('default_timezone', DEFAULT_TIME_ZONE));
+
+        $account = new stdClass();
+        $account->id = $group_id;
+        $account->requestor = $requestor_id;
+        /*
+        if ($group_array['delegation_group'] != $form_state['values']['delegation_group']) {
+          $account->type = $form_state['values']['delegation_group'];
+        }
+        */
+        $account->type = $gtype;
+        if (in_array('Messaging Administrator', $user->roles)) {
+          $account->role = 'Messaging Administrator';
+        }
+        if (in_array('Messaging Administrator', $user->roles)) {
+          if ($group_array['displayName'] != '@NBC UNI '.$form_state['values']['displayname']) {
+            //$account->displayName = $form_state['values']['displayname_parent'].' '.$form_state['values']['displayname'];
+          }
+	  if ($group_array['displayName'] != $form_state['values']['displayname']) {
+            $account->displayName = $form_state['values']['displayname'];
+          }
+        } else {
+          /*
+          if ($group_array['displayName'] != $form_state['values']['displayname']) {
+            $account->displayName = $form_state['values']['displayname_parent'].' '.$form_state['values']['displayname'];
+          }
+          */
+        }
+        if ($group_array['description'] != $form_state['values']['description']) {
+          $account->description = $form_state['values']['description'];
+        }
+
+        if ($group_array['membershippolicy'] != $form_state['values']['membership_types']) {
+          $account->membershippolicy = strtolower($form_state['values']['membership_types']);
+        }
+
+        if ($group_array['membershippolicy'] != $form_state['values']['membership_types']) {
+          if($form_state['values']['membership_types'] == 'public') {//according to membership type
+            $account->hidemembership = 'FALSE';
+          } else {
+            $account->hidemembership = 'TRUE';
+          }
+        }
+		$hide_from_addresslists = isset($form_state['values']['hide_from_addresslists']) ? $form_state['values']['hide_from_addresslists'] : 'FALSE';
+		$group_array_hidefromaddresslists = isset($group_array['hidefromaddresslists']) ? $group_array['hidefromaddresslists'] : '';
+        if (in_array('Messaging Administrator', $user->roles)) {
+          if ($group_array_hidefromaddresslists != $hide_from_addresslists) {
+            $account->hidefromaddresslists = $hide_from_addresslists;
+          }
+        }
+        $security_group = isset($form_state['values']['security_group']) ? $form_state['values']['security_group'] : '';
+        $group_array_securitygroup = isset($group_array['securitygroup']) ? $group_array['securitygroup'] : '';
+        if ($group_array_securitygroup != $security_group) {
+          $account->securitygroup = $security_group;
+        }
+
+        if (in_array('Messaging Administrator', $user->roles)) {
+          if ($group_array['comments'] != $form_state['values']['comments']) {
+            $account->comments = $form_state['values']['comments'];
+          }
+        }
+		if(!empty($form_state['values']['email_domains'])) {
+			$email_suffix = $form_state['values']['email_domains'];
+		}
+		else {
+			$email_suffix = '';
+		}
+
+        if (trim(strtolower($group_array['email']['primary'])) == trim(strtolower($form_state['values']['email'].$email_suffix))) {
+        } else {
+          $email = new stdClass();
+          $email->value = trim(strtolower($form_state['values']['email'].$email_suffix));
+          $email->type = 'primary';
+          $account->emails = array($email);
+        }
+
+        //alternate email start
+        $alternateemails_add = array();
+        if(!empty($form_state['values']['new_alternate_email'])) {
+          $additional_email = $form_state['values']['new_alternate_email'];
+          $additional_email_array = explode(',', $additional_email);
+          $m = 0;
+          foreach($additional_email_array as $value) {
+            $new_alternate_email = $value;
+            //$mystring = $new_alternate_email;
+            //$findme   = 'g';
+            //$pos = strpos($mystring, $findme);
+            //if ($pos == false) {
+              $alternateemails_add[$m]['value'] = $new_alternate_email;
+              $alternateemails_add[$m]['op'] = 'add';
+            //}
+            $m++;
+          }
+        }
+
+        $alternateemails_remove = array();
+        if(!empty($form_state['values']['new_alternate_email_del'])) {
+          $additional_email_del = $form_state['values']['new_alternate_email_del'];
+          $additional_email_del_array = explode(',', $additional_email_del);
+          if(!isset($m)) {
+              $m = 0;
+          }
+          $n = $m+1;
+          foreach($additional_email_del_array as $value_del) {
+            $new_alternate_email_del = $value_del;
+            //$mystring_del = $new_alternate_email_del;
+            //$findme_del   = 'g';
+           //$pos_del = strpos($mystring_del, $findme_del);
+            //if ($pos_del == false) {
+              $alternateemails_remove[$n]['value'] = $new_alternate_email_del;
+              $alternateemails_remove[$n]['op'] = 'remove';
+            //}
+            $n++;
+          }
+        }
+
+        $alternateemails_all = array_merge($alternateemails_add, $alternateemails_remove);
+        if (!empty($alternateemails_all)) {
+          $account->alternateemails = $alternateemails_all;
+        }
+        //$account->alternateemails = array_merge($alternateemails_add, $alternateemails_remove);
+        //alternate email end
+        //print_r($account->alternateemails);
+
+		$createfor = isset($form_state['values']['createfor']) ? $form_state['values']['createfor'] : '';
+        //Manage name calculation
+        if($createfor != 0 && !empty($form_state['values']['groupmanager'])){
+          //if someone else then others as approver. (ie primary manager)
+          //some one else manager case
+          preg_match('/[\w\s]+\(([\d]+)\)*/', $form_state['values']['groupmanager'], $sso);
+          $info = _idm_profile_get_user($sso[1]);
+          $manager_sso = '';
+          $user_type = '';
+          $info['usertype'] = isset($info['usertype']) ? $info['usertype'] : '';
+          $user_type = $info['usertype'];
+          $manager_sso = isset($info['sso']) ? $info['sso'] : '';
+          $selected_user_managerid = $sso[1];
+          $info_manager = _idm_profile_get_user($selected_user_managerid);
+        } else {
+          //Myself manager case
+          $selected_user_managerid = $requestor_id;
+        }
+
+        $owner_add = array();
+        //primary manager calculation
+
+        $manager_m_sso = preg_replace("/[^0-9]+/", "", $group_array['primarymanager']);
+
+        if ($manager_m_sso != $selected_user_managerid) {
+          $owner_add[0]['value'] = 'uid='. $selected_user_managerid.',ou=worker,dc=tfayd,dc=com';
+          $owner_add[0]['op'] = 'add';
+          $owner_add[0]['primary'] = 'true';
+        }
+
+        if(!empty($form_state['values']['new_manager_sso'])) {
+          $additional_manager = $form_state['values']['new_manager_sso'];
+          $additional_manager_array = explode(',', $additional_manager);
+          $i = 1;
+          foreach($additional_manager_array as $value) {
+            $additional_manager_sso = $value;
+            $mystring = $additional_manager_sso;
+            $findme   = 'g';
+            $pos = strpos($mystring, $findme);
+            if ($pos !== false) {
+              $owner_add[$i]['value'] = 'cn='.$additional_manager_sso.',ou=Groups,dc=tfayd,dc=com';
+              $owner_add[$i]['op'] = 'add';
+            } else {
+              $owner_add[$i]['value'] = 'uid='.$additional_manager_sso.',ou=worker,dc=tfayd,dc=com';
+              $owner_add[$i]['op'] = 'add';
+            }
+            $i++;
+          }
+        }
+
+        $owner_remove = array();
+        if(!empty($form_state['values']['new_manager_sso_del'])) {
+          $additional_manager_del = $form_state['values']['new_manager_sso_del'];
+          $additional_manager_del_array = explode(',', $additional_manager_del);
+          if(!isset($i)) {
+            $i = 0;
+          }
+          $j = $i+1;
+          foreach($additional_manager_del_array as $value_del) {
+            $additional_manager_sso_del = $value_del;
+            $mystring_del = $additional_manager_sso_del;
+            $findme_del   = 'g';
+            $pos_del = strpos($mystring_del, $findme_del);
+            if ($pos_del !== false) {
+              $owner_remove[$j]['value'] = 'cn='.$additional_manager_sso_del.',ou=Groups,dc=tfayd,dc=com';
+              $owner_remove[$j]['op'] = 'remove';
+            } else {
+              $owner_remove[$j]['value'] = 'uid='.$additional_manager_sso_del.',ou=worker,dc=tfayd,dc=com';
+              $owner_remove[$j]['op'] = 'remove';
+            }
+            $j++;
+          }
+        }
+
+        $owner_all = array_merge($owner_add, $owner_remove);
+        if (!empty($owner_all)) {
+          $account->owners = $owner_all;
+        }
+
+        $member_add = array();
+        if(!empty($form_state['values']['new_member_sso'])) {
+          $additional_member = $form_state['values']['new_member_sso'];
+          $additional_member_array = explode(',', $additional_member);
+          $k = 0;
+          foreach($additional_member_array as $value) {
+            $additional_member_sso = $value;
+            $mystring = $additional_member_sso;
+            $findme   = 'g';
+            $pos = strpos($mystring, $findme);
+            if ($pos !== false) {
+              $member_add[$k]['value'] = 'cn='.$additional_member_sso.',ou=Groups,dc=tfayd,dc=com';
+              $member_add[$k]['op'] = 'add';
+            } else {
+              $member_add[$k]['value'] = 'uid='.$additional_member_sso.',ou=worker,dc=tfayd,dc=com';
+              $member_add[$k]['op'] = 'add';
+            }
+            $k++;
+          }
+        }
+
+        $member_remove = array();
+        if(!empty($form_state['values']['new_member_sso_del'])) {
+          $additional_member_del = $form_state['values']['new_member_sso_del'];
+          $additional_member_del_array = explode(',', $additional_member_del);
+          if(!isset($k)) {
+            $k = 0;
+          }
+          $l = $k+1;
+          foreach($additional_member_del_array as $value_del) {
+            $additional_member_sso_del = $value_del;
+            $mystring_del = $additional_member_sso_del;
+            $findme_del   = 'g';
+            $pos_del = strpos($mystring_del, $findme_del);
+            if ($pos_del !== false) {
+              $member_remove[$l]['value'] = 'cn='.$additional_member_sso_del.',ou=Groups,dc=tfayd,dc=com';
+              $member_remove[$l]['op'] = 'remove';
+            } else {
+              $member_remove[$l]['value'] = 'uid='.$additional_member_sso_del.',ou=worker,dc=tfayd,dc=com';
+              $member_remove[$l]['op'] = 'remove';
+            }
+            $l++;
+          }
+        }
+
+        $member_all = array_merge($member_add, $member_remove);
+        if (!empty($member_all)) {
+          $account->members = $member_all;
+        }
+
+        $group_array['expirationdate'] = empty($group_array['expirationdate']) ? '' : $group_array['expirationdate'];
+
+        if (($group_array['expirationdate'] == '') && ($form_state['values']['expiration_date'] == '')) {
+          //no need to update
+        } else if (($group_array['expirationdate'] != '') && ($form_state['values']['expiration_date'] == '')) {
+          //no need to update
+        } else if (($group_array['expirationdate'] == '') && ($form_state['values']['expiration_date'] == 0)) {
+            $account->expiration = 'FALSE';
+            $account->expirationdate = '';
+        } else if (($group_array['expirationdate'] != '') && ($form_state['values']['expiration_date'] == 0)) {
+            $account->expiration = 'FALSE';
+            $account->expirationdate = '';
+        } else {
+            if($form_state['values']['expiration_date'] != 0) {
+                $account->expiration = 'TRUE';
+                $months = $form_state['values']['expiration_date'];
+                $account->expirationdate = date("d-M-Y", idm_portal_strtotime("+".$months." month"));
+                /*if (!in_array('Messaging Administrator', $user->roles)) {
+                  $account->expirationdate = date("d-M-Y", idm_portal_strtotime("+18 month"));
+                } else {
+                  $months = $form_state['values']['expiration_date'];
+                  $account->expirationdate = date("d-M-Y", idm_portal_strtotime("+".$months." month"));
+                }*/
+            }
+        }
+
+        $allowedtosend = array();
+        $restrictions = $form_state['values']['restrictions_sso'];
+        if(!empty($restrictions)) {
+          $restrictions_array = explode(',', $restrictions);
+          $e = 0;
+          foreach($restrictions_array as $value) {
+            $restrictions_user_sso = $value;
+            $mystring = $restrictions_user_sso;
+            $findme   = 'g';
+            $pos = strpos($mystring, $findme);
+            if ($pos !== false) {//group id
+                $gid = $restrictions_user_sso;
+                $allowedtosend[$e]['value'] = 'cn='.$restrictions_user_sso.',ou=Groups,dc=tfayd,dc=com';
+                $group_info = _idm_groups_get_group_info($gtype,$gid);
+                if(isset($group_info['email'])) {
+                  if(isset($group_info['email']['primary'])) {
+                    $allowedtosend_email = new stdClass();
+                    $allowedtosend_email->value = $group_info['email']['primary'];
+                    $allowedtosend_email->type = 'work';
+                    $allowedtosend[$e]['emails'] = array($allowedtosend_email);
+                  } else {
+                    $allowedtosend[$e]['emails'] = '';
+                   }
+                }
+                $group_info['displayName'] = empty($group_info['displayName']) ? '' : $group_info['displayName'];
+                $allowedtosend[$e]['display'] = $group_info['displayName'];
+                $allowedtosend[$e]['op'] = 'add';
+                $e++;
+            } else {//user SSO
+                $allowedtosend[$e]['value'] = 'uid='.$restrictions_user_sso.',ou=worker,dc=tfayd,dc=com';
+                $info = _idm_profile_get_user(trim($restrictions_user_sso));
+                if(isset($info['email']['work'])) {
+                  if(isset($info['email']['work'])) {
+                    $allowedtosend_email = new stdClass();
+                    $allowedtosend_email->value = $info['email']['work'];
+                    $allowedtosend_email->type = 'work';
+                    $allowedtosend[$e]['emails'] = array($allowedtosend_email);
+                  } else {
+                    $allowedtosend[$e]['emails'] = '';
+                  }
+                }
+                $info['displayName'] = empty($info['displayName']) ? '' : $info['displayName'];
+                $allowedtosend[$e]['display'] = $info['displayname'];
+                $allowedtosend[$e]['op'] = 'add';
+                $e++;
+            }
+          }
+        }
+        /*
+        if(!empty($allowedtosend)) {
+          $account->allowedtosend = $allowedtosend;
+        }*/
+
+        $allowedtosend_del = array();
+        $restrictions_del = $form_state['values']['restrictions_sso_del'];
+        if(!empty($restrictions_del)) {
+          $restrictions_array_del = explode(',', $restrictions_del);
+          if(!isset($e)) {
+            $e = 0;
+          }
+          $o = $e+1;
+          foreach($restrictions_array_del as $value_del) {
+            $restrictions_user_sso_del = $value_del;
+            $mystring_del = $restrictions_user_sso_del;
+            $findme_del   = 'g';
+            $pos_del = strpos($mystring_del, $findme_del);
+            if ($pos_del !== false) {//group id
+                $gid_del = $restrictions_user_sso_del;
+                $allowedtosend_del[$o]['value'] = 'cn='.$restrictions_user_sso_del.',ou=Groups,dc=tfayd,dc=com';
+                $group_info_del = _idm_groups_get_group_info($gtype,$gid_del);
+                if(isset($group_info_del['email'])) {
+                  if(isset($group_info_del['email']['primary'])) {
+                    $allowedtosend_email_del = new stdClass();
+                    $allowedtosend_email_del->value = $group_info_del['email']['primary'];
+                    $allowedtosend_email_del->type = 'work';
+                    $allowedtosend_del[$o]['emails'] = array($allowedtosend_email_del);
+                  } else {
+                    $allowedtosend_del[$o]['emails'] = '';
+                   }
+                }
+                $group_info_del['displayName'] = empty($group_info_del['displayName']) ? '' : $group_info_del['displayName'];
+                $allowedtosend_del[$o]['display'] = $group_info_del['displayName'];
+                $allowedtosend_del[$o]['op'] = 'remove';
+                $o++;
+            } else {//user SSO
+                $allowedtosend_del[$o]['value'] = 'uid='.$restrictions_user_sso_del.',ou=worker,dc=tfayd,dc=com';
+                $info_del = _idm_profile_get_user(trim($restrictions_user_sso_del));
+                if(isset($info_del['email']['work'])) {
+                  if(isset($info_del['email']['work'])) {
+                    $allowedtosend_email_del = new stdClass();
+                    $allowedtosend_email_del->value = $info_del['email']['work'];
+                    $allowedtosend_email_del->type = 'work';
+                    $allowedtosend_del[$o]['emails'] = array($allowedtosend_email_del);
+                  } else {
+                    $allowedtosend_del[$o]['emails'] = '';
+                  }
+                }
+                $info_del['displayName'] = empty($info_del['displayName']) ? '' : $info_del['displayName'];
+                $allowedtosend_del[$o]['display'] = $info_del['displayname'];
+                $allowedtosend_del[$o]['op'] = 'remove';
+                $o++;
+            }
+          }
+        }
+        $allowedtosend_all = array_merge($allowedtosend, $allowedtosend_del);
+        if (!empty($allowedtosend_all)) {
+          $account->allowedtosend = $allowedtosend_all;
+        }
+
+        $url = variable_get('rest_api_check_url', 'http://3.3.175.127:8080/idm-api/rest').'/internal/groups/'.$group_id;
+        $method = 'PUT';
+        $user_json = json_encode($account);
+        //drupal_set_message('URL: '.$url.'<br>USER JSON<pre>' . print_r($user_json, TRUE) . '</pre>');
+        $result = idm_profile_execute_curl($url, $user_json, $method);
+        $result_obj = json_decode($result);
+        //drupal_set_message('USER JSON<pre>' . print_r($result_obj, TRUE) . '</pre>');
+        //returning result
+        if(isset($result_obj->custom_transactionId)){  //approval needed
+            ctools_object_cache_clear('api', 'group_data_mygroups');
+            ctools_object_cache_clear('api', 'group_data_mymemberships');
+            if(!empty($form_state['values']['approver_sso'])){
+              preg_match('/([\w\s]+)[\s]+\(([\d]+)\)/', $form_state['values']['approver_sso'], $approver_details);
+              if(!empty($approver_details[2])){
+                idm_notifications_clear_user_cache($approver_details[2]);
+              }
+            }
+            $success_message = "Your Group request has been sent for approval to Group Managers.";
+            drupal_set_message(filter_xss('<img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">'.$success_message, $allowed_tags = array('img')));
+            //drupal_set_message(filter_xss('<img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">'.$success_message.'<br />USER JSON<pre>' . print_r($user_json, TRUE) . '</pre>'.'<br />RESULT<pre>' . print_r($result, TRUE) . '</pre>', $allowed_tags = array('img')));
+            //drupal_set_message($success_message);
+            //drupal_set_message('USER JSON<pre>' . print_r($user_json, TRUE) . '</pre>');
+            //drupal_set_message('RESULT<pre>' . print_r($result, TRUE) . '</pre>');
+            drupal_goto('groups');
+        } else if($result_obj->op_status == SUCCESS){
+            ctools_object_cache_clear('api', 'group_info_'.$result_obj->id);
+            ctools_object_cache_clear('api', 'group_data_mygroups');
+            ctools_object_cache_clear('api', 'group_data_mymemberships');
+            $success_message = "Group has been updated successfully. Group id: ".$result_obj->id;
+            drupal_set_message(filter_xss('<img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">'.$success_message, $allowed_tags = array('img')));
+            //drupal_set_message(filter_xss('<img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">'.$success_message.'<br />USER JSON<pre>' . print_r($user_json, TRUE) . '</pre>'.'<br />RESULT<pre>' . print_r($result, TRUE) . '</pre>', $allowed_tags = array('img')));
+            //drupal_set_message($success_message);
+            //drupal_set_message('USER JSON<pre>' . print_r($user_json, TRUE) . '</pre>');
+            //drupal_set_message('RESULT<pre>' . print_r($result, TRUE) . '</pre>');
+            drupal_goto('group/DST/'.$result_obj->id);
+        } elseif(!PROD){
+            form_set_error('', '<img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">'.t('Error occurred during group update request. Please contact the <a href="mailto:'.variable_get('idm_contact_emailid','identityservicessupportIDM@nbcuni.com').'">IdM Support Team</a> for assistance.'));
+            //drupal_set_message('DEBUG Info<br>URL<pre>' . print_r($url, TRUE) . '</pre>');
+            //IP-1134
+            //drupal_set_message(filter_xss('<img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">'.'USER JSON<pre>' . print_r($user_json, TRUE) . '</pre>'.'<br />RESULT<pre>' . print_r($result, TRUE) . '</pre>', $allowed_tags = array('img')));
+            //drupal_set_message('USER JSON<pre>' . print_r($user_json, TRUE) . '</pre>');
+            //drupal_set_message('RESULT<pre>' . print_r($result, TRUE) . '</pre>');
+        }
+    }
+}
+
+/**
+* Callback function to get manager details
+*/
+function idm_groups_get_manager_details($userid) {
+	$info = _idm_profile_get_user($userid);
+	$userroles = $info['roles'];
+	  //Manage name calculation
+	  $manager_sso = '';
+	  $user_type = '';
+	  $info['usertype'] = isset($info['usertype']) ? $info['usertype'] : '';
+	  $user_type = $info['usertype'];
+	  $business_name = $info['company'];
+	  if ($user_type == 'employee') {
+	    $manager_sso = $info['sso'];
+	    $manager_fullname = $info['managerfullname'];
+	  } elseif ($user_type == 'contractor' || $user_type == 'functional') {
+	    $manager_sso = $info['managerid'];
+	    $manager_fullname = $info['managerfullname'];
+	  }
+	  //echo $manager_fullname.' ('.$manager_sso.')<br><br>Business Name: '.$business_name;
+	  echo $manager_fullname.' ('.$manager_sso.')';
+}
+
+/**
+* Callback function to get user type details
+*/
+function idm_groups_get_usertype_details($userid) {
+  global $user;
+  $profile_id = $user->name;
+	$info = _idm_profile_get_user($userid);
+	  //Manage name calculation
+	  $manager_sso = '';
+	  $user_type = '';
+	  $info['usertype'] = isset($info['usertype']) ? $info['usertype'] : '';
+	  $user_type = $info['usertype'];
+	  if ($user_type == 'employee') {
+		  $info_profile = _idm_profile_get_user($profile_id);
+		  //Manage name calculation
+		  $manager_sso = '';
+		  $user_type = '';
+		  $info_profile['usertype'] = isset($info_profile['usertype']) ? $info_profile['usertype'] : '';
+		  $user_type = $info_profile['usertype'];
+		  $business_name = $info['company'];
+		  if ($user_type == 'employee') {
+		    $manager_sso = $info_profile['sso'];
+		    $manager_fullname = $info_profile['managerfullname'];
+		  } elseif ($user_type == 'contractor' || $user_type == 'functional') {
+		    $manager_sso = $info_profile['managerid'];
+		    $manager_fullname = $info_profile['managerfullname'];
+		  }
+	  } elseif ($user_type == 'contractor' || $user_type == 'functional') {
+	    $manager_sso = $info['managerid'];
+	    $manager_fullname = $info['managerfullname'];
+  	    $business_name = $info['company'];
+	  }
+	  //echo $manager_fullname.' ('.$manager_sso.')<br><br>Business Name: '.$business_name;
+	  echo $manager_fullname.' ('.$manager_sso.')';
+}
+
+//Groups autocomplete search
+function idm_groups_autocomplete_search($string){
+  global $user;
+  $userid = empty($user->name) ? '' : $user->name;
+  $matches = array();
+  $solr_base = variable_get('emp_dir_solr','http://dev.idmportal.inbcu.com:8080/solr/collection1');
+  //$url = $solr_base."/select?q=category:group%20AND%20title:*".urlencode($string)."*&wt=json&indent=true";
+
+  //Preparing the solr query as per user role
+  if (in_array('Messaging Administrator', $user->roles)) {
+    //echo 'Messaging Administrator';
+    $url =  $solr_base.'/select?q=category:group%20AND%20title:*'.idm_profile_format_search_keyword($string).'*&wt=json&indent=true';
+  } else {
+    //echo 'No Messaging Administrator';
+    $url = $solr_base.'/select?q=category:group%20AND%20visibility:Public%20AND%20title:*'.idm_profile_format_search_keyword($string).'*&wt=json&indent=true';
+  }
+
+  $response_obj = drupal_http_request($url);
+  $response = $response_obj->data;
+  $icon_img_public = drupal_get_path('theme', 'idmtheme').'/images/asseticon.jpg';
+  $icon_img_private = drupal_get_path('theme', 'idmtheme').'/images/asseticon.jpg';
+  $docs = json_decode($response)->response->docs;
+  $numofrecords = json_decode($response)->response->numFound;
+  if($numofrecords > 0) {
+	  foreach ($docs as $value ) {
+	    if($value->visibility == 'public') {
+		  $icon_path = '<img src="/' . $icon_img_public . '">&nbsp;';
+	      $matches[$value->title[0]] = "<span class=\"auto-highlight\"><a href=/group/$value->usertype/$value->id><div class=\"group_type\">".$icon_path."</div><div class=\"group_value\">".$value->title[0]."</div></a></span>";
+		}
+		else {
+	        $icon_url = '<div class=\"group_type\"><img src="/' . $icon_img_private . '">&nbsp;</div>';
+			$matches[$value->title[0]] = "<span class=\"auto-highlight\"><a href=/group/$value->usertype/$value->id><div class=\"group_type\">".$icon_url."</div><div class=\"group_value\">".$value->title[0]."</div></a></span>";
+		}
+	  }
+  } else {
+     $noresult = NULL;
+     //$matches[$noresult] = "<div class='no-search-result'><div class='noresult'>Sorry, there are no results for <br><span class='searchtxt'><b>".$string."</b></span></div></div>";
+     $matches[$noresult] = "<div class='no-search-result'>Sorry, there are no results for <span class='searchtxt'>".$string."</span><br><br>Search tips:<br><ul class='searchtips'><li>Check your spelling.</li><li>Try fewer or more general words.</li><li>Try using acronyms or using different words.</li><li>Try using fewer words. Your search might be too specific.</li></ul></div>";
+
+  }
+  drupal_json_output($matches);
+}
+
+function idm_groups_manager_autocomplete($string){
+  $matches = array();
+  $solr_base = variable_get('emp_dir_solr','http://dev.idmportal.inbcu.com:8080/solr/collection1');
+  $url = $solr_base."/select?q=category:worker%20AND%20title:*".urlencode($string)."*%20AND%20email:*&wt=json&indent=true";
+  //$url = $solr_base."/select?q=".idm_profile_format_search_keyword("category:workery:group) AND title:*$string* AND email:*")."&wt=json&indent=true";
+  $response_obj = drupal_http_request($url);
+  $response = $response_obj->data;
+  $docs = json_decode($response)->response->docs;
+  $numofrecords = json_decode($response)->response->numFound;
+  $icon_img_path = drupal_get_path('theme', 'idmtheme').'/images/solid-person-icon.svg';
+  if ($icon_img_path) {
+    $icon = '<img src="/' . $icon_img_path . '">';
+  }
+  if($numofrecords > 0) {
+	  foreach ($docs as $value ) {
+	    $matches[$value->title[0]] = $icon.' '.str_ireplace($string,"<span class=\"auto-highlight\">$string</span>" , $value->title[0]);
+	  }
+  } else {
+      $noresult = NULL;
+      $matches[$noresult] = "<div class='no-search-result'><div class='noresult'>Sorry, there are no results for <br><span class='searchtxt'><b>".$string."</b></span></div></div>";
+  }
+  drupal_json_output($matches);
+}
+/**
+* Callback function to check group email id
+*/
+function idm_groups_check_email_id($emailid) {
+  $solr_base = variable_get('emp_dir_solr','http://dev.idmportal.inbcu.com:8080/solr/collection1');
+  $filter = '(email:"'.$emailid.'" OR alternatemail:"'.$emailid.'")';
+  $url =  $solr_base."/select?q=category:group%20AND%20".urlencode($filter)."&wt=json&indent=true";
+  $result = json_decode(idm_profile_execute_curl($url));
+  $totalrecords = $result->response;
+  echo $totalrecords->numFound;
+}
+
+/**
+  * Callback function to check group display name
+  */
+function idm_groups_check_display_name($displayname) {
+  global $user;
+  if(!in_array('Messaging Administrator', $user->roles)){
+    $displayname = '@NBC UNI '.$displayname;
+  }
+  $solr_base = variable_get('emp_dir_solr','http://dev.idmportal.inbcu.com:8080/solr/collection1');
+  $filter = 'title:"'.$displayname.'"';
+  $url =  $solr_base."/select?q=category:group%20AND%20".urlencode($filter)."&wt=json&indent=true";
+  $result = json_decode(idm_profile_execute_curl($url));
+  $totalrecords = $result->response;
+  echo $totalrecords->numFound;
+}
+
+function idm_groups_get_groupmanagers($gid, $gtype) {
+  $manager_sso_array = array();
+  $group_info = _idm_groups_get_group_info($gtype, $gid);
+
+  if (!empty($group_info['group_managers'])) {
+    foreach ($group_info['group_managers'] as $key=>$value) {
+      $manager_sso= $value['manager_sso'];
+      if(!empty($manager_sso) && (strpos($manager_sso , 'g') !== 0)){
+        $manager_sso_array[] = $manager_sso ;
+      }
+    }
+  }
+  return $manager_sso_array;
+}
+
+/**
+	* Members CSV upload
+	*/
+function idm_groups_group_member_upload() {
+	$row = 0;
+	$info = pathinfo($_FILES["member_csv"]["name"]);
+	$valid = 1;
+	$dataarr = array();
+	if ($info["extension"] == "csv") {
+		if(($file_handle = fopen($_FILES["member_csv"]["tmp_name"], 'r')) !== FALSE){
+			while(($data = fgetcsv($file_handle, 1000, ",")) !== FALSE){
+				if($row != 0 && trim($data[2]) !="" && trim($data[3]) !="" && !in_array(trim($data[3]), $dataarr)) {
+					$pos = strpos($data[3], "g");
+					if ($pos !== false) {
+						$group_details = _idm_groups_get_group_info("DST", trim($data[3]));
+						if(!empty($group_details["displayName"])) {
+							$data[] = $group_details["displayName"];
+						} else {
+							print json_encode("Data Error in row ".$row." for ".$data[3]);
+							$valid = 0;
+							break;
+						}
+						if(!empty($group_details["email"]["primary"])) {
+							$data[] = $group_details["email"]["primary"];
+						} else {
+							print json_encode("Data Error in row ".$row." for ".$data[3]);
+							$valid = 0;
+							break;
+						}
+					} else {
+						$user_info = _idm_profile_get_user($data[3]);
+						if(!empty($user_info["displayname"])) {
+							$data[] = $user_info["displayname"];
+						} else {
+							print json_encode("Data Error in row ".$row." for ".$data[3]);
+							$valid = 0;
+							break;
+						}
+					}
+					$new_members[] = $data;
+				}
+				$dataarr[] = $data[3];
+				$row++;
+			}
+		}
+		array_unshift($new_members, array ( "0" => $row-1 ));
+		if(isset($new_members) && $valid == 1) {
+			print (json_encode($new_members));
+		}
+	} else{
+		print json_encode("Error");
+	}
+}
+
+function idm_group_mobile_renew_group($gtype='DST', $gid='') {
+  $group_array = _idm_groups_get_group_info($gtype, $gid);
+  $var['groupinfo'] = $group_array;
+  return theme('renewgroup_mobile', $var);
+}
+
+function idm_group_mobile_terminate_group($gtype='DST', $gid='') {
+  $group_array = _idm_groups_get_group_info($gtype, $gid);
+  $var['groupinfo'] = $group_array;
+  return theme('terminategroup_mobile', $var);
+}
+
+function idm_group_mobile_transfer_group($gtype='DST', $gid='') {
+  global $user;
+  $userid = empty($user->name) ? '' : $user->name;
+  $group_array = _idm_groups_get_group_info($gtype, $gid);
+  $var['groupinfo'] = $group_array;
+  $var['manager_lookup_field'] = idm_profile_get_manager_lookup_field($userid);
+  return theme('transfergroup_mobile', $var);
+}
+
+function idm_group_mobile_leave_group($gtype='DST', $gid='') {
+  $group_array = _idm_groups_get_group_info($gtype, $gid);
+  $var['groupinfo'] = $group_array;
+  return theme('leavegroup_mobile', $var);
+}

@@ -1,0 +1,478 @@
+<?php
+define('DEFAULT_TIME_ZONE', 'America/New_York');
+//echo variable_get('legacy','76038603850');
+
+function idm_portal_boot(){
+    //Setting the drupal server timezone to the API server time zone
+  date_default_timezone_set(variable_get('default_timezone', DEFAULT_TIME_ZONE));
+}
+
+function idm_portal_init() {
+	//echo 'legacy'.$_SESSION['legacy'];
+  $request_path = request_path();
+  if($request_path == 'saml_login' || $request_path == 'landing-page'){
+	   return;
+  }
+  /*
+  if(isset($_GET['legacy'])) {
+    $_SESSION['legacy'] = $_GET['legacy'];
+  }
+  */
+  ctools_include('object-cache');
+  global $user;
+
+  $userid = empty($user->name) ? '' : $user->name;
+  $profile = _idm_profile_get_user($userid);
+
+  $count_approval = ctools_object_cache_get('api', 'approve_count');
+  if($count_approval === NULL){
+    _idm_notifications_get_approve();
+    $count_approval = ctools_object_cache_get('api', 'approve_count');
+  }
+  $count_renewal = ctools_object_cache_get('api', 'renew_count');
+  if($count_renewal === NULL){
+    _idm_notifications_get_renews();
+    $count_renewal = ctools_object_cache_get('api', 'renew_count');
+  }
+  $count_expiringgroups = ctools_object_cache_get('api', 'expiringgroups_count');
+  if($count_expiringgroups === NULL){
+    _idm_notifications_get_expiringgroups();
+    $count_expiringgroups = ctools_object_cache_get('api', 'expiringgroups_count');
+  }
+  $count = ( !empty($count_renewal) ? $count_renewal : 0 ) + ( !empty($count_approval) ? $count_approval : 0 ) + ( !empty($count_expiringgroups) ? $count_expiringgroups : 0 );
+  $count = (empty($count) || ($count == 0)) ? '!' : $count;
+  $s_account = variable_get('s_account', 'nbcuiamnew');
+  drupal_add_js(array('idm_portal' => array('notiCount' => $count),'omniture_account' => array('s_account'=> $s_account),'props' => array('prop1'=>$userid,'prop9'=>$profile['company'],'prop10'=>$userid)), 'setting');
+  drupal_add_library('system', 'ui');
+  drupal_add_library('system', 'ui.dialog');
+}
+
+function idm_portal_user_insert(&$edit, $account, $category) {
+  global $_simplesamlphp_auth_saml_attributes;
+  if (isset($_simplesamlphp_auth_saml_attributes['FirstName']) && ! empty($_simplesamlphp_auth_saml_attributes['FirstName'][0])) {
+    $account->field_first_name[LANGUAGE_NONE][0]['value'] = $_simplesamlphp_auth_saml_attributes['FirstName'][0];
+  }
+  if (isset($_simplesamlphp_auth_saml_attributes['LastName']) && ! empty($_simplesamlphp_auth_saml_attributes['LastName'][0])) {
+    $account->field_last_name[LANGUAGE_NONE][0]['value'] = $_simplesamlphp_auth_saml_attributes['LastName'][0];
+  }
+  if (isset($_simplesamlphp_auth_saml_attributes['uid']) && ! empty($_simplesamlphp_auth_saml_attributes['uid'][0])) {
+    $account->field_sso[LANGUAGE_NONE][0]['value'] = $_simplesamlphp_auth_saml_attributes['uid'][0];
+  }
+  if (isset($_simplesamlphp_auth_saml_attributes['mail']) && ! empty($_simplesamlphp_auth_saml_attributes['mail'][0])) {
+    $account->field_email[LANGUAGE_NONE][0]['value'] = $_simplesamlphp_auth_saml_attributes['mail'][0];
+  }
+  field_attach_update('user', $account);
+  /*
+   * $url = variable_get('rest_api_check_url', 'http://idm.api.stg.inbcu.com:8080/IDMIntegration/rest/internal/Users'); $url_get = $url . '/' . $user->name; $url_get = $url.'/501273325'; $ch = curl_init(); curl_setopt($ch, CURLOPT_URL, $url_get); curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE); //execute get $result = curl_exec($ch); $info = curl_getinfo($ch); $userdetails = json_decode($result); $userrole = user_role_load_by_name($userdetails->userType); $user = user_load($account->uid); $new_role[$userrole->rid] = $userrole->name; $all_roles = $user->roles + $new_role; user_save($user, array('roles' => $all_roles));
+   */
+}
+
+function idm_portal_user_login(&$edit, $account) {
+  global $user;
+  global $_simplesamlphp_auth_saml_attributes;
+  $_SESSION['logged_in'] = TRUE;
+
+  if (isset($_simplesamlphp_auth_saml_attributes['uid'][0])) {
+    $userid = $_simplesamlphp_auth_saml_attributes['uid'][0];
+    $_SESSION['samlsession']['user'] = $userid;
+
+    $info = _idm_profile_get_user($userid);
+    $response_role_names = array();
+
+    //Roles and Usertype list
+    if ((isset($info['roles'])) || (isset($info['usertype']))) {
+      if (isset($info['roles'])) {
+        $no_of_roles = count($info['roles']);
+        for($i=0; $i<($no_of_roles); $i++)
+        {
+          $response_role_names[$i] = $info['roles'][$i]->value;
+        }
+        if (isset($info['usertype'])) {
+          $response_role_names[$no_of_roles] = $info['usertype'];
+        }
+      } else {
+        if (isset($info['usertype'])) {
+          $response_role_names[0] = $info['usertype'];
+        }
+      }
+    }
+    if (!empty($response_role_names)) {
+      $new_role = array();
+      foreach ($response_role_names as $key => $res_role_name) {
+        //Check weather the given role already exits or not.
+        $userrole = user_role_load_by_name($res_role_name);
+        $userrole->name = isset($userrole->name) ? $userrole->name : '';
+        $new_role[$userrole->rid] = $userrole->name;
+      }
+      user_save($user, array ('roles' => $new_role));
+    }
+  }
+  $idm_admin_user_sso_string = variable_get('idm_admin_user_sso','206426150,206464634,206464632');
+  $idm_admin_user_sso_array = explode(",", $idm_admin_user_sso_string);
+  if(in_array($user->name, $idm_admin_user_sso_array)) {
+    //variable_set('legacy', 'admin');
+    //$_SESSION['legacy'] = '';
+  } else {
+    //variable_set('legacy', '1');
+	  $_SESSION['legacy'] = '1';
+  }
+  unset($_SESSION['messages']['status']);
+}
+
+function idm_portal_user_logout($account) {
+  $_GET['destination'] = request_uri();
+  /*
+   * if (isset($_SESSION['samlsession']['user'])) { $sso = $_SESSION['samlsession']['user']; $nid = db_query("SELECT nid FROM {node} INNER JOIN {field_data_field_sso} WHERE field_sso_value = :sso", array(':sso' => $sso))->fetchField(); node_delete($nid); unset($_SESSION['samlsession']['user']); }
+   */
+  /*
+  global $user;
+  if (isset($_SESSION['samlsession']['user']) && $user->uid != 1) {
+    unset($_SESSION['samlsession']['user']);
+    user_delete($user->uid);
+  }
+  */
+  //variable_set('legacy','1');
+  unset($_SESSION['legacy']);
+}
+
+function idm_portal_cron() {
+  /*
+  $result = db_select('users', 'u')->fields('u', array (
+    'uid'
+  ))
+    ->condition('access', time() - 86400, '<')
+    ->condition('uid', array (
+    0,
+    1
+  ), 'NOT IN')
+    ->execute();
+  while ( $record = $result->fetchAssoc() ) {
+    user_delete($record['uid']);
+  }
+  */
+}
+
+function idm_portal_menu() {
+  $items = array ();
+  $items['testpath'] = array (
+    'title' => 'testpath',
+    'page callback' => 'testpath',
+    'access arguments' => array('access idm profile')
+  );
+
+  $items['homepage'] = array (
+    'title' => 'Home page',
+    'page callback' => 'home_page_content',
+    'access callback' => 'home_page_access'
+  );
+
+  $items['mystaff'] = array (
+    'page callback' => 'idm_portal_mystaff',
+    'page arguments' => array (1,2,3),
+    'access arguments' => array('access idm profile'),
+    'type' => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+/**
+ * Callback for homepage
+ */
+function home_page_content() {
+  global $user;
+  $path = drupal_get_path('theme', 'idmtheme');
+  drupal_add_js($path . '/js/jquery.maskedinput.min.js');
+  $userid = empty($user->name) ? '' : $user->name;
+  $profile = _idm_profile_get_user($userid);
+  $location_details = taxonomy_get_term_by_name($profile['location_id']);
+  $form['phone_code'] = array(
+    '#type' => 'hidden',
+    '#attributes' => array('id' => 'phone_code'),
+    '#value' => isset($location_details->field_post_code[LANGUAGE_NONE][0]['safe_value']) ? $location_details->field_post_code[LANGUAGE_NONE][0]['safe_value'] : 1
+  );
+  return $form;
+}
+
+/**
+ * Access Callback method
+ */
+function home_page_access() {
+  global $user;
+  if ($user->uid == 0) {
+    return false;
+  } else {
+    return true;
+  }
+}
+
+function testpath() {
+  $result = db_select('users', 'u')->fields('u', array (
+    'uid'
+  ))
+    ->condition('access', time() - 86400, '<')
+    ->condition('uid', array (
+    0,
+    1
+  ), 'NOT IN')
+    ->execute();
+  while ( $record = $result->fetchAssoc() ) {
+    print_r($record['uid']);
+    // user_delete($record['uid']);
+  }
+}
+
+/**
+ * Custom method for intereacting with the API and caching the result.
+ *
+ * @param String $url
+ * @param String $cache_cid
+ * @param Integer $cache_ttl
+ */
+function _idm_portal_get_api_data($url) {
+  //$data = drupal_http_request($url);
+  $result = new stdClass();
+  $result->data = idm_profile_execute_curl($url);
+  return $result;
+}
+/**
+ * Implementing hook_theme().
+ */
+function idm_portal_theme() {
+  $themes = array (
+    'my_staff' => array (
+      'template' => 'my_staff',
+      'variables' => array (
+        'vars' => array (
+          ''
+        )
+      )
+    ),
+	'recommends' => array (
+      'template' => 'recommends',
+      'variables' => array (
+        'vars' => array (
+          ''
+        )
+      )
+    )
+  );
+  return $themes;
+}
+/**
+ * Implementing hook_block_info().
+ */
+function idm_portal_block_info() {
+  $blocks['my_staff'] = array (
+    'info' => t('My Staff'),
+    'cache' => DRUPAL_NO_CACHE
+  );
+  $blocks['recommends'] = array (
+    'info' => t('Recommended for you')
+  );
+  return $blocks;
+}
+
+/**
+ * Implementing hook_block_view().
+ *
+ * @param String $delta
+ */
+function idm_portal_block_view($delta) {
+  $block = array ();
+  switch ($delta) {
+	case 'my_staff' :
+      $block['content'] = _idm_home_get_my_staff_info($delta);
+      $block['subject'] = '';
+      break;
+	case 'recommends' :
+      $block['content'] = _idm_home_get_recommends_info($delta);
+      $block['subject'] = '';
+      break;
+  }
+  return $block;
+}
+function _idm_home_get_my_staff_info($delta) {
+  global $user;
+  //$userid = '221013362';
+  $userid = empty($user->name) ? '' : $user->name;
+  $allowed_roles = array('employee', 'contractor');
+  $roles = $user->roles;
+  $roles = array_map('strtolower', $roles);
+  $roles_present = array_intersect($roles, $allowed_roles);
+  if (empty($roles_present) && $user->uid != 1) return "<div class='employee_empty_message'>You do not have any direct reports.</div>";
+
+  $mystaff_content = _idm_portal_get_mystaff($userid);
+  $var['employee_count'] = isset($mystaff_content['employee_count']) ? $mystaff_content['employee_count'] : 0;
+  $var['contractor_count'] = isset($mystaff_content['contractor_count']) ? $mystaff_content['contractor_count'] : 0;
+  $var['functional_count'] = isset($mystaff_content['functional_count']) ? $mystaff_content['functional_count'] : 0;
+  $mystaffs_content = array_slice($mystaff_content, 3);
+  $var['filterby'] = 'contractor';
+  $var['mystaff'] = $mystaffs_content;
+  return theme('my_staff', $var);
+}
+/**
+ * Wrapper method for get the Employee details.
+ *
+ * @param String $userid,$userType
+ */
+function _idm_portal_get_mystaff($userid) {
+  ctools_include('object-cache');
+  $return = new stdClass();
+  $userType = CONTRACTOR;
+  $sortBy = 'id'; //'displayName';
+  $sortOrder = 'ascending'; //'ascending';
+  $url = variable_get('rest_api_check_url').'/internal/users';
+  $sort_filter = '&sortBy='.$sortBy.'&sortOrder='.$sortOrder;
+  $filter = rawurlencode('manager.managerId eq '.$userid.' and userType eq '.$userType).$sort_filter;
+  $url_get = $url . '/?filter='.$filter;
+  //Since renew request and my staff makes identical calls, reuse cached renew request
+  $data = ctools_object_cache_get('api', 'mystaff');
+  if(empty($data) && isset($_SESSION['logged_in'])){
+    $data = ctools_object_cache_get('api', 'renew_request');
+    ctools_object_cache_set('api', 'mystaff',$data);
+    //unset($_SESSION['logged_in']);
+  }elseif(empty($data)){
+    $result = _idm_portal_get_api_data($url_get);
+    if(!empty($result->data)){
+      $data = $result->data;
+      ctools_object_cache_set('api', 'mystaff',$data);
+    }
+  }
+  if(!empty($data)){
+    $return = _idm_portal_format_mystaff_info(json_decode($data));
+  }
+  return $return;
+}
+function _idm_portal_format_mystaff_info($data) {
+  $mystaffinfo = array();
+  if (isset($data->results)) {
+    foreach($data->results as $key=>$value) {
+      if ($value->userType == 'Employees') {
+        $mystaffinfo['employee_count'] = $value->custom_count;
+      }
+      if ($value->userType == 'Contractors') {
+        $mystaffinfo['contractor_count'] = $value->custom_count;
+      }
+      if ($value->userType == 'Functional') {
+        $mystaffinfo['functional_count'] = $value->custom_count;
+      }
+    }
+  }
+  if (!empty($data->Resources)){
+    foreach($data->Resources as $key=>$value) {
+      if(!empty($value->id)){
+        $mystaffinfo[$key]['sso'] = $value->id;
+      }
+      $mystaffinfo[$key]['name'] = idm_profile_format_display_name($value,false);
+      if(!empty($value->emails)){
+        foreach($value->emails as $email){
+          if($email->type == 'alternate') {
+            $mystaffinfo[$key]['email'][$email->type] = $email->value;
+          }
+        }
+      }
+
+      if (!empty($value->title) && $value->userType == "Employee" ) {
+        $mystaffinfo[$key]['job_title'] = $value->title;
+      }else if (!empty($value->custom_jobTitle) && ($value->userType == "Contractor" || $value->userType == "Functional")) {
+        $mystaffinfo[$key]['job_title'] = $value->custom_jobTitle;
+      }else {
+        $mystaffinfo[$key]['job_title'] = 'None';
+      }
+
+      if(!empty($value->userType)){
+        $mystaffinfo[$key]['user_type'] = $value->userType;
+      }
+      if(!empty($value->custom_enddate )){
+        if(is_array($value->custom_enddate)) {
+          foreach($value->custom_enddate as $val) {
+            $value->custom_enddate = $val->value;
+          }
+        }
+        $mystaffinfo[$key]['end_date'] = date('m/d/Y',strtotime($value->custom_enddate));
+      }
+	}
+ }
+  return $mystaffinfo;
+}
+function _idm_home_get_recommends_info($delta) {
+  global $user;
+  $profile_id = $user->name;
+  $info = _idm_profile_get_user($profile_id);
+  $user_type = isset($info['usertype']) ? $info['usertype'] : '';
+  if ($user_type == 'contractor') {
+    $var['user_role'] = 'contractor';
+    //manager id
+    $managerid = isset($info['managerid']) ? $info['managerid'] : '';
+    $var['managerid'] = $managerid;
+    //custom_sponsorshipstatus
+    $custom_sponsorshipstatus = isset($info['sponsorshipstatus']) ? $info['sponsorshipstatus'] : '';
+    $var['custom_sponsorshipstatus'] = $custom_sponsorshipstatus;
+  }else {
+    $var['user_role'] = '';
+  }
+  return theme('recommends', $var);
+}
+/**
+ * Callback for getting employees.
+ */
+function idm_portal_mystaff($userType = 'all', $sortBy = '', $sortOrder = '') {
+  $mystaff_content = _idm_portal_get_mystaff_list($userType, $sortBy, $sortOrder);
+  $mystaffs_content = array_slice($mystaff_content, 3);
+  $var['mystaff'] = $mystaffs_content;
+  $var['filterby'] = $userType;
+  return theme('my_staff', $var);
+}
+/**
+ * Wrapper method for get the Employee details.
+ *
+ * @param String $userid,$userType
+ */
+function _idm_portal_get_mystaff_list($userType,$sortBy,$sortOrder) {
+  global $user;
+  //$userid = '221013362';
+  $userid = empty($user->name) ? '' : $user->name;
+  $url = variable_get('rest_api_check_url').'/internal/users';
+  if ($userType == 'all') {
+    if ($sortBy == ''){
+      $filter = rawurlencode('manager.managerId eq '.$userid);
+    }else {
+      $sort_filter = '&sortBy='.$sortBy.'&sortOrder='.$sortOrder;
+      $filter = rawurlencode('manager.managerId eq '.$userid).$sort_filter;
+    }
+  } else {
+    if ($sortBy == '') {
+      $filter = rawurlencode('manager.managerId eq '.$userid.' and userType eq '.$userType);
+    } else {
+      $sort_filter = '&sortBy='.$sortBy.'&sortOrder='.$sortOrder;
+      $filter = rawurlencode('manager.managerId eq '.$userid.' and userType eq '.$userType).$sort_filter;
+    }
+  }
+  $url_get = $url . '/?filter='.$filter;
+  $result = _idm_portal_get_api_data($url_get);
+  $return = _idm_portal_format_mystaff_info(json_decode($result->data));
+  return $return;
+}
+
+function idm_portal_clear_cache($cache_cid=NULL) {
+	cache_clear_all($cache_cid, 'cache', TRUE);
+}
+
+/**
+ *
+ * @param type $period
+ * @return timestamp
+ * PHP strtotime function goes beyond last day of the month when months are added to the base/current.
+ * For Eg- 31st Oct + 1 months gives 01 Dec instead of 30 Nov
+ * This function makes sure that renewed date doesn't cross the month limit
+ */
+function idm_portal_strtotime($period){
+  if(stripos($period, 'month') === FALSE){
+    return strtotime($period);
+  }
+  $expected_renew_month_index = date('m') + (intval($period) % 12);
+  $expected_renew_month = $expected_renew_month_index > 12 ? $expected_renew_month_index - 12 : $expected_renew_month_index;
+  $renew_date_timestamp = strtotime($period);
+  $actual_renew_month = date('m', $renew_date_timestamp);
+  return ($expected_renew_month == $actual_renew_month) ? $renew_date_timestamp : strtotime("last day of ".$period);
+}

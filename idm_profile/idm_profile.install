@@ -1,0 +1,79 @@
+<?php
+
+/**
+ * Add the top level "Company" Taxonomy Terms.
+ */
+function idm_profile_update_7001() {
+  $vocab = taxonomy_vocabulary_machine_name_load('Company');
+  // If the vocab doesn't exsist, create it.
+  if(!is_object($vocab)) {
+    $vocab = new stdClass;
+    $vocab->name = 'Company';
+    $vocab->machine_name = 'company';
+    $vocab->module = 'Taxonomy';
+    $vocab->description = 'company';
+    $vocab->hierarchy = 1;
+    taxonomy_vocabulary_save($vocab);
+    // Prevent possible confusion.
+    $vid = $vocab->vid;
+  }
+  else {
+    // It is what was already in the database.
+    $vid = $vocab->vid;
+  }
+  $term = new stdClass;
+  $term->vid = $vid;
+  $term->name = 'iGate';
+  taxonomy_term_save($term);
+
+  $term = new stdClass;
+  $term->vid = $vid;
+  $term->name = 'Genpact';
+  taxonomy_term_save($term);
+
+  $term = new stdClass;
+  $term->vid = $vid;
+  $term->name = 'HCL';
+  taxonomy_term_save($term);
+
+  $term = new stdClass;
+  $term->vid = $vid;
+  $term->name = 'SDG';
+  taxonomy_term_save($term);
+
+  $term = new stdClass;
+  $term->vid = $vid;
+  $term->name = 'Birlasoft';
+  taxonomy_term_save($term);
+
+  $term = new stdClass;
+  $term->vid = $vid;
+  $term->name = 'TCS';
+  taxonomy_term_save($term);
+
+  $term = new stdClass;
+  $term->vid = $vid;
+  $term->name = 'Softtek';
+  taxonomy_term_save($term);
+
+  $term = new stdClass;
+  $term->vid = $vid;
+  $term->name = 'Wipro';
+  taxonomy_term_save($term);
+
+  $term = new stdClass;
+  $term->vid = $vid;
+  $term->name = 'Microland';
+  taxonomy_term_save($term);
+
+  $term = new stdClass;
+  $term->vid = $vid;
+  $term->name = 'Tech Mahindra';
+  taxonomy_term_save($term);
+
+  $term = new stdClass;
+  $term->vid = $vid;
+  $term->name = 'Other';
+  taxonomy_term_save($term);
+  return t('The Company taxonomy terms for the top level have been created. Please revert the Company feature to allow for proper field settings.');
+}

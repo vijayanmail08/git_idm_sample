@@ -1,0 +1,415 @@
+<?php
+
+/**
+ * @file
+ * All module hooks implementation can be found in this file.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function rest_api_check_menu() {
+  $items = array ();
+  $items['admin/config/development/rest_api_check'] = array (
+    'title' => 'REST API configurations',
+    'description' => 'REST API configurations to create a resource.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array (
+      'rest_api_check_settings'
+    ),
+    'access arguments' => array (
+      'administer rest_api_check'
+    ),
+    'type' => MENU_LOCAL_TASK | MENU_NORMAL_ITEM,
+    'file' => 'rest_api_check.admin.inc',
+    'weight' => 1
+  );
+
+	$items['admin/config/development/account_settings'] = array (
+    'title' => 'Account Settings',
+    'description' => 'Account Settings.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array (
+      'account_settings'
+    ),
+    'access arguments' => array (
+      'administer account_settings'
+    ),
+    'type' => MENU_LOCAL_TASK | MENU_NORMAL_ITEM,
+    'file' => 'rest_api_check.admin.inc',
+    'weight' => 2
+  );
+
+	$items['admin/config/development/other_settings'] = array (
+	'title' => 'Other Settings',
+	'description' => 'Other Settings',
+	'page callback' => 'drupal_get_form',
+	'page arguments' => array (
+	  'other_settings'
+	),
+	'access arguments' => array (
+	  'administer other_settings'
+	),
+	'type' => MENU_LOCAL_TASK,
+	'file' => 'rest_api_check.admin.inc',
+	'weight' => 3
+	);
+
+	$items['admin/config/development/waveseturl_settings'] = array (
+	'title' => 'Waveset Url Settings',
+	'description' => 'Waveset Url Settings',
+	'page callback' => 'drupal_get_form',
+	'page arguments' => array (
+	  'waveseturl_settings'
+	),
+	'access arguments' => array (
+	  'administer waveseturl_settings'
+	),
+	'type' => MENU_LOCAL_TASK,
+	'file' => 'rest_api_check.admin.inc',
+	'weight' => 3
+	);
+  
+  $items['access_user'] = array (
+    'title' => 'Access Resource using REST API',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array (
+      'rest_api_check_access_user_form'
+    ),
+    'access arguments' => array (
+      'administer rest_api_check'
+    ),
+    'type' => MENU_CALLBACK
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function rest_api_check_permission() {
+  return array (
+    'administer rest_api_check' => array (
+      'title' => t('Administer rest_api_check'),
+      'description' => t('Administer rest_api_check module.')
+    ),
+    'administer account_settings' => array (
+      'title' => t('Administer account_settings'),
+      'description' => t('Administer account_settings module.')
+    ),
+    'administer other_settings' => array (
+      'title' => t('Administer other_settings'),
+      'description' => t('Administer other_settings module.')
+    ),
+    'administer waveseturl_settings' => array (
+      'title' => t('Administer waveseturl_settings'),
+      'description' => t('Administer waveseturl_settings module.')
+    )
+  );
+}
+
+/**
+ * Provide a simple form for accessing a resource using REST API.
+ */
+function rest_api_check_access_user_form($form, &$form_state) {
+  $form = array (
+    'rest_api_check_access_externalId' => array (
+      '#type' => 'textfield',
+      '#title' => t('Resource externalId'),
+      '#description' => t('Enter Resource externalId.'),
+      '#default_value' => '',
+      '#required' => TRUE
+    ),
+    'rest_api_check_access_submit' => array (
+      '#type' => 'submit',
+      '#value' => t('Submit')
+    )
+  );
+  return $form;
+}
+
+/**
+ * Provide a validate hook to access a resource.
+ */
+function rest_api_check_access_user_form_validate($form, &$form_state) {
+  if (! is_numeric($form_state['values']['rest_api_check_access_externalId'])) {
+    form_set_error('rest_api_check_access_externalId', '<img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">'.t('External Id should only contain numeric value.'));
+	//form_set_error('rest_api_check_access_externalId', t('External Id should only contain numeric value.'));
+  }
+}
+
+/**
+ * Provide a submit hook to access a resource.
+ */
+function rest_api_check_access_user_form_submit($form, &$form_state) {
+  $externalId = $form_state['values']['rest_api_check_access_externalId'];
+  //$url = variable_get('rest_api_check_url', 'http://idm.api.stg.inbcu.com:8080/IDMIntegration/rest/internal/Users');
+  //$url_get = $url . '/' . $externalId;
+  $url = variable_get('rest_api_check_url', 'http://3.3.175.127:8080/idm-api/rest');
+  $url_get = $url . '/internal/users' . $externalId;
+
+  $ch = curl_init();
+  curl_setopt($ch, CURLOPT_URL, $url_get);
+  curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+
+  // execute get
+  $result = curl_exec($ch);
+  $info = curl_getinfo($ch);
+
+  // returning result
+  //IP-1134
+  //drupal_set_message(filter_xss('<img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">'.'URL<pre>' . print_r($url_get, TRUE) . '</pre>'.'<br />RESULT<pre>' . print_r($result, TRUE) . '</pre>'.'<br />INFO<pre>' . print_r($info, TRUE) . '</pre>', $allowed_tags = array('img')));
+  //drupal_set_message('URL<pre>' . print_r($url_get, TRUE) . '</pre>');
+  //drupal_set_message('RESULT<pre>' . print_r($result, TRUE) . '</pre>');
+  //drupal_set_message('INFO<pre>' . print_r($info, TRUE) . '</pre>');
+}
+
+/**
+ * Implementation of hook_form_alter().
+ */
+function rest_api_check_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'webform_client_form_1') {
+    unset($form['#submit']);
+    $form['#submit'][] = 'rest_api_check_webform_components_submit';
+  }
+  if ($form_id == 'webform_client_form_2') {
+    unset($form['#submit']);
+    $form['#submit'][] = 'rest_api_check_webform_components_update_submit';
+  }
+}
+
+function rest_api_check_webform_components_submit($form, &$form_state) {
+  // Used webform submission to get formatted data
+  $node = node_load($form_state['values']['details']['nid']);
+  _webform_client_form_submit_process($node, $form_state['values']['submitted']);
+  $form_state['values']['submitted_tree'] = $form_state['values']['submitted'];
+
+  //$url = variable_get('rest_api_check_url', 'http://idm.api.stg.inbcu.com:8080/IDMIntegration/rest');
+  //$url .= '/create';
+  $url = variable_get('rest_api_check_url', 'http://3.3.175.127:8080/idm-api/rest');
+  $url .= '/internal/users/create';
+  $user = new stdClass();
+  $user->schemas = array (
+    'urn:scim:schemas:core:1.0'
+  );
+
+  //print_r($form_state['values']['submitted_tree']);
+  //print_r($form_state['complete form']['submitted']);exit;
+
+  foreach ($form_state['values']['submitted_tree'] as $key => $value) {
+    if (is_array($form_state['values']['submitted_tree'][$key])) {
+      $element = new stdClass();
+      foreach ($form_state['values']['submitted_tree'][$key] as $key1 => $value1) {
+
+        if ($value1 != '') {
+          $element->$key1 = $value1;
+          if ($form_state['complete form']['submitted'][$key][$key1]['#type'] == 'date') {
+            $element->$key1 = date("d-M-Y", strtotime($value));
+          }
+        }
+      }
+      if ($key == 'emails' || $key == 'phoneNumbers') {
+        $user->$key = array();
+        $user->{$key}[] = $element;
+      } else {
+        $user->$key = new stdClass();
+        $user->$key = $element;
+      }
+      if (count((array) $user->$key) == 0) {
+        unset($user->$key);
+      }
+    } else {
+      if ($value != '') {
+        $user->$key = $value;
+        if ($form_state['complete form']['submitted'][$key]['#type'] == 'date') {
+          $user->$key = date("d-M-Y", strtotime($value));
+        }
+      }
+    }
+  }
+
+  $user_json = json_encode($user);
+  //$user_json = '{"schemas":["urn:scim:schemas:core:1.0"],"userType":"Contractor","custom_supplierEmail":"test1@nbcuni.com","custom_locationid":"USCAUNI1","custom_startdate":"30-Oct-2013","custom_enddate":"30-Nov-2013","name":{"familyName":"Venugopal","givenName":"Pradeep"},"emails":[{"value":"pradeep.venugopal@nbcuni.com","type":"work"}],"phoneNumbers":[{"value":"1112223344","type":"work","bCountry":"US","bAreaCode":"111","bLocalNumber":"2223344"}],"manager":{"managerId":"206046032"}}';
+  $userid = variable_get('rest_api_check_http_auth_username', '999999001');
+  $pass = variable_get('rest_api_check_http_auth_pass', 'test123test');
+
+  // open connection
+  $ch = curl_init();
+  curl_setopt($ch, CURLOPT_URL, $url);
+  curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+  curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+  curl_setopt($ch, CURLOPT_USERPWD, $userid . ":" . $pass);
+  curl_setopt($ch, CURLOPT_UNRESTRICTED_AUTH, TRUE);
+  curl_setopt($ch, CURLOPT_HTTPHEADER, array (
+    "Content-Type: application/json;"
+  ));
+  curl_setopt($ch, CURLOPT_POST, TRUE);
+  curl_setopt($ch, CURLOPT_POSTFIELDS, $user_json);
+  curl_setopt($ch, CURLOPT_HEADER, 1);
+
+  // execute post
+  $result = curl_exec($ch);
+  $info = curl_getinfo($ch);
+
+  // returning result
+  //IP-1134
+  //drupal_set_message(filter_xss('<img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">'.'URL<pre>' . print_r($url, TRUE) . '</pre>'.'<br />USER JSON<pre>' . print_r($user_json, TRUE) . '</pre>'.'<br />RESULT<pre>' . print_r($result, TRUE) . '</pre>'.'<br />INFO<pre>' . print_r($info, TRUE) . '</pre>', $allowed_tags = array('img')));
+  //drupal_set_message('URL<pre>' . print_r($url, TRUE) . '</pre>');
+  //drupal_set_message('USER JSON<pre>' . print_r($user_json, TRUE) . '</pre>');
+  //drupal_set_message('RESULT<pre>' . print_r($result, TRUE) . '</pre>');
+  //drupal_set_message('INFO<pre>' . print_r($info, TRUE) . '</pre>');
+}
+
+function rest_api_check_webform_components_update_submit($form, &$form_state) {
+  // Used webform submission to get formatted data
+  $node = node_load($form_state['values']['details']['nid']);
+  _webform_client_form_submit_process($node, $form_state['values']['submitted']);
+  $form_state['values']['submitted_tree'] = $form_state['values']['submitted'];
+
+  /*
+   * echo '<pre>'; print_r($form_state['values']['submitted_tree']); echo '</pre>';
+   */
+  //$url = variable_get('rest_api_check_url', 'http://idm.api.stg.inbcu.com:8080/IDMIntegration/rest/internal/Users');
+  $url = variable_get('rest_api_check_url', 'http://3.3.175.127:8080/idm-api/rest').'/internal/Users';
+  $user = new stdClass();
+  $user->schemas = array (
+    'urn:scim:schemas:core:1.0'
+  );
+
+  // print_r($form_state['complete form']['submitted']); exit;
+
+  foreach ($form_state['values']['submitted_tree'] as $key => $value) {
+    // echo $fields[$key] = $key;
+    /*
+     * echo $key; echo '<br>'; echo $value; echo '<br>';
+     */
+    if (is_array($form_state['values']['submitted_tree'][$key])) {
+      $user->$key = new stdClass();
+      foreach ($form_state['values']['submitted_tree'][$key] as $key1 => $value1) {
+        /*
+         * echo '<br>'; echo $key1; echo '<br>'; echo $value1; echo '<br>';
+         */
+        if ($value1 != '') {
+          $user->$key->$key1 = $value1;
+          if ($form_state['complete form']['submitted'][$key][$key1]['#type'] == 'date') {
+            $user->$key->$key1 = date("d-M-Y", strtotime($value));
+          }
+        }
+      }
+      if (count((array) $user->$key) == 0) {
+        unset($user->$key);
+      }
+    } else {
+      if ($value != '') {
+        $user->$key = $value;
+        if ($form_state['complete form']['submitted'][$key]['#type'] == 'date') {
+          $user->$key = date("d-M-Y", strtotime($value));
+        }
+      }
+    }
+  }
+  $url = $url . '/' . $user->id;
+  // drupal_set_message('USER JSON<pre>'. print_r($user, TRUE) .'</pre>');
+
+  // print_r(json_encode($user)); exit;
+  $user_json = json_encode($user);
+  $userid = variable_get('rest_api_check_http_auth_username', '999999001');
+  $pass = variable_get('rest_api_check_http_auth_pass', 'test123test');
+
+  // open connection
+  $ch = curl_init();
+  curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
+  curl_setopt($ch, CURLOPT_URL, $url);
+  curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+  curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+  curl_setopt($ch, CURLOPT_USERPWD, $userid . ":" . $pass);
+  curl_setopt($ch, CURLOPT_UNRESTRICTED_AUTH, TRUE);
+  curl_setopt($ch, CURLOPT_HTTPHEADER, array (
+    "Content-Type: application/json;"
+  ));
+  curl_setopt($ch, CURLOPT_POST, TRUE);
+  curl_setopt($ch, CURLOPT_POSTFIELDS, $user_json);
+  curl_setopt($ch, CURLOPT_HEADER, 1);
+
+  // execute post
+  $result = curl_exec($ch);
+  $info = curl_getinfo($ch);
+
+  // returning result
+  // drupal_set_message('URL<pre>'. print_r($url, TRUE) .'</pre>');
+  //IP-1134
+  //drupal_set_message(filter_xss('<img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">'.'USER JSON<pre>' . print_r($user_json, TRUE) . '</pre>'.'<br />RESULT<pre>' . print_r($result, TRUE) . '</pre>', $allowed_tags = array('img')));
+  //drupal_set_message('USER JSON<pre>' . print_r($user_json, TRUE) . '</pre>');
+  //drupal_set_message('RESULT<pre>' . print_r($result, TRUE) . '</pre>');
+  // drupal_set_message('INFO<pre>'. print_r($info, TRUE) .'</pre>');
+}
+
+/**
+ * Implementation of hook_webform_validation_validators().
+ */
+function rest_api_check_webform_validation_validators() {
+  $validators = array (
+    'us_phone' => array (
+      'name' => t('US Phone Number'),
+      'component_types' => array (
+        'number',
+        'textfield',
+        'email',
+        'select',
+        'hidden',
+        'time'
+      ),
+      'description' => t('Verifies for a US Phone Number.')
+    ),
+    'dependent_field' => array (
+      'name' => t('Dependent Value'),
+      'component_types' => array (
+        'number',
+        'textfield',
+        'email',
+        'select',
+        'hidden',
+        'time'
+      ),
+      'description' => t('Verifies for a Dependent Value')
+    )
+  );
+  return $validators;
+}
+
+/**
+ * Implementation of hook_webform_validation_validate().
+ */
+function rest_api_check_webform_validation_validate($validator_name, $items, $components, $rule) {
+  if ($items) {
+    $errors = array ();
+    switch ($validator_name) {
+      case 'us_phone' :
+        foreach ($items as $key => $val) {
+          if ($val != '' && ! preg_match('/^\(?(\d{3})\)?[-\. ]?(\d{3})[-\. ]?(\d{4})$/', $val)) {
+            $errors[$key] = t('%item is not a valid US Phone number.', array (
+              '%item' => $components[$key]['name']
+            ));
+          }
+        }
+      case "phone_content" :
+        foreach ($items as $key => $val) {
+          // print_R($components[$key]['name']);
+        }
+        break;
+    }
+  }
+  return $errors;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function idm_omniture_settings_permission() {
+  return array (
+    'administer idm_omniture_settings' => array (
+      'title' => t('Administer idm_omniture_settings'),
+      'description' => t('Administer idm_omniture_settings module.')
+    )
+  );
+}

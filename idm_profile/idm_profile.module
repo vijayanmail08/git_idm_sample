@@ -1,0 +1,3043 @@
+<?php
+define('IDM_API_GET_USER', 'idm_api_get_user');
+define('SUCCESS', 'success');
+define('DEBUG',0);
+define('LOCAL_DEV',!(bool)strpos($_SERVER['SERVER_NAME'],'inbcu.com'));
+define('PROD',(bool)($_SERVER['SERVER_NAME'] == 'myidentity.inbcu.com' || $_SERVER['SERVER_NAME'] == 'iam.inbcu.com'));
+define('DEBUG_PROFILE_ID', 501517319);
+define('DEBUG_REQUESTOR_ID', 206426150);
+define('DEBUG_MANAGER_ID', '206426150');
+define('DEFAULT_COUNTRY_CODE', 'US');
+define('DEFAULT_FUNCTIONAL_LOC_ID', 'IDMFUNCTIONAL');
+define('DEFAULT_MANAGER_ID', '206046032');
+define('DEFAULT_ISD_CODE', '+1');
+define('BUILDING_MAX_LENGTH', '32');
+define('FLOOR_MAX_LENGTH', '20');
+define('LOCATION_MAX_LENGTH', '20');
+
+
+if(PROD){
+  error_reporting(0);
+}
+/**
+ * Implementation of hook_menu().
+ */
+function idm_profile_menu() {
+  $items = array ();
+
+  $items['profile'] = array (
+    'title' => 'User Profile',
+    'page callback' => '_idm_profile_get_user_info',
+    'page arguments' => array (
+      'user_info'
+    ),
+    'access arguments' => array('access idm profile')
+  );
+  $items['profile/%'] = array (
+    'page arguments' => array (
+      'user_info',
+      1
+    )
+  ) + $items['profile'];
+
+  /*$items['edit-user-new'] = array (
+    'title' => 'Edit User Info',
+    'page callback' => '_idm_profile_edit_user_info',
+    'access arguments' => array('access idm profile')
+  );*/
+  $items['edit-user'] = array (
+    'title' => 'Edit User Info',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array (
+      'idm_profile_edit_user_profile'
+    ),
+    'access arguments' => array('access idm profile')
+  );
+  $items['edit-user/%'] = array (
+    'page arguments' => array (
+      'idm_profile_edit_user_profile',
+      1
+    )
+  ) + $items['edit-user'];
+
+  $items['progress/save/%/%'] = array (
+    'title' => 'Profile Progress Save',
+    'page callback' => 'idm_profile_progress_save',
+    'page arguments' => array (2, 3),
+    'access arguments' => array('access idm profile')
+  );
+  $items['create/contractor'] = array (
+    'title' => 'Create New Contractor',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array ('idm_create_new_contractor'),
+    'access arguments' => array('access idm profile')
+  );
+  $items['create/functional'] = array (
+    'title' => 'Create New Functional Account',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array ('idm_create_new_functional_account'),
+    'access arguments' => array('access idm profile')
+  );
+  $items['transfer-employee-all/%/%'] = array (
+    'title' => 'Transfer Employee',
+    'page callback' => 'idm_profile_transfer_employee_all',
+    'page arguments' => array (1, 2),
+    'access arguments' => array('access idm profile')
+  );
+  $items['transfer-employee/%/%'] = array (
+    'title' => 'Transfer Employee',
+    'page callback' => 'idm_profile_transfer_employee',
+    'page arguments' => array (1, 2),
+    'access arguments' => array('access idm profile')
+  );
+  $items['renew-employee-all/%/%'] = array (
+    'title' => 'Renew Employee All',
+    'page callback' => 'idm_profile_renew_employee_all',
+    'page arguments' => array (1, 2),
+    'access arguments' => array('access idm profile')
+  );
+  $items['renew-employee/%/%'] = array (
+    'title' => 'Renew Employee',
+    'page callback' => 'idm_profile_renew_employee',
+    'page arguments' => array (1, 2),
+    'access arguments' => array('access idm profile')
+  );
+  $items['terminate-employee-all/%'] = array (
+    'title' => 'Terminate Employee',
+    'page callback' => 'idm_profile_terminate_employee_all',
+    'page arguments' => array (1),
+    'access arguments' => array('access idm profile')
+  );
+  $items['terminate-employee/%'] = array (
+    'title' => 'Terminate Employee',
+    'page callback' => 'idm_profile_terminate_employee',
+    'page arguments' => array (1),
+    'access arguments' => array('access idm profile')
+  );
+  $items['revoke-employee-all/%'] = array (
+    'title' => 'Terminate Employee',
+    'page callback' => 'idm_profile_revoke_employee_all',
+    'page arguments' => array (1),
+    'access arguments' => array('access idm profile')
+  );
+  $items['revoke-employee/%'] = array (
+    'title' => 'Revoke Employee',
+    'page callback' => 'idm_profile_revoke_employee',
+    'page arguments' => array (1),
+    'access arguments' => array('access idm profile')
+  );
+  $items['mobile-renew/%'] = array (
+    'title' => 'Renew Employee',
+	'page callback' => 'idm_profile_mobile_renew_employee',
+    'page arguments' => array (1),
+    'access arguments' => array('access idm profile')
+  );
+  $items['mobile-transfer/%'] = array (
+    'title' => 'Transfer Employee',
+	'page callback' => 'idm_profile_mobile_transfer_employee',
+    'page arguments' => array (1),
+    'access arguments' => array('access idm profile')
+  );
+  $items['mobile-terminate/%'] = array (
+    'title' => 'Terminate Employee',
+	'page callback' => 'idm_profile_mobile_terminate_employee',
+	'page arguments' => array (1),
+    'access arguments' => array('access idm profile')
+  );
+  $items['mobile-revoke/%'] = array (
+    'title' => 'Revoke Employee',
+	'page callback' => 'idm_profile_mobile_revoke_employee',
+	'page arguments' => array (1),
+    'access arguments' => array('access idm profile')
+  );
+  $items['profile-upload'] = array (
+    'title' => 'Profile Pic Upload',
+	'page callback' => 'idm_profile_upload_image',
+    'access arguments' => array('access idm profile')
+  );
+  $items['post-profile-upload'] = array (
+    'title' => 'Post Profile Upload Updates',
+	'page callback' => 'idm_profile_post_profile_upload_updates',
+    'access arguments' => array('access idm profile')
+  );
+  $items['autocomplete/name'] = array(
+    'page callback'=> 'idm_profile_name_autocomplete',
+    'access arguments' => array('access idm profile'),
+  );
+
+  $items['autocomplete/manager'] = array(
+    'page callback'=> 'idm_profile_manager_autocomplete',
+    'access arguments' => array('access idm profile'),
+  );
+  $items['autocomplete/mgr'] = array(
+    'page callback'=> 'idm_profile_mgr_autocomplete',
+    'access arguments' => array('access idm profile'),
+  );
+  $items['autocomplete/globalsearch'] = array(
+    'page callback'=> 'idm_profile_globalsearch_autocomplete',
+    'access arguments' => array('access idm profile'),
+  );
+  $items['autocomplete/directreports'] = array(
+    'page callback'=> 'idm_profile_directreports_autocomplete',
+    'access arguments' => array('access idm profile'),
+  );
+  $items['autocomplete/address'] = array(
+    'page callback'=> 'idm_profile_address_autocomplete',
+    'access arguments' => array('access idm profile'),
+  );
+  $items['autocomplete/application'] = array(
+    'page callback'=> 'idm_profile_application_autocomplete',
+    'access arguments' => array('access idm profile'),
+  );
+  $items['functional/%'] = array (
+    'title' => 'User Profile',
+    'page callback' => 'idm_profile_get_functional_user_info',
+    'page arguments' => array (1),
+    'access arguments' => array('access idm profile')
+  );
+  $items['getaddress/%'] = array (
+    'title' => 'Get Address Id',
+    'page callback' => 'idm_profile_get_location_id',
+    'page arguments' => array (1),
+    'access arguments' => array('access idm profile'),
+  );
+  $items['getlocation/%'] = array (
+    'title' => 'Get location details',
+    'page callback' => 'idm_profile_get_location_details',
+    'page arguments' => array (1),
+    'access arguments' => array('access idm profile'),
+  );
+  $items['edit/password'] = array (
+    'title' => 'Change Password',
+    'page callback' => 'idm_profile_change_password',
+    'access arguments' => array('access idm profile'),
+    'options' => array('attributes' => array('target' => '_blank'))
+  );
+  $items['checkemail/%'] = array (
+    'title' => 'Check Email Id',
+    'page callback' => 'idm_profile_check_email_id',
+    'page arguments' => array (1),
+    'access arguments' => array('access idm profile'),
+  );
+
+  $items['autocomplete/groupanduser/%'] = array(
+    'page callback'=> 'idm_profile_groupanduser_autocomplete',
+    'page arguments' => array (2),
+    'access arguments' => array('access idm profile'),
+  );
+
+  $items['autocomplete/member'] = array(
+    'page callback'=> 'idm_profile_member_autocomplete',
+    'access arguments' => array('access idm profile'),
+  );
+
+  $items['autocomplete/tilde'] = array(
+    'page callback'=> 'idm_profile_tilde_autocomplete',
+    'access arguments' => array('access idm profile'),
+  );
+
+  $items['autocomplete/tildesomeoneelsename'] = array(
+    'page callback'=> 'idm_profile_tildesomeoneelsename_autocomplete',
+    'access arguments' => array('access idm profile'),
+  );
+
+  $items['autocomplete/employee'] = array(
+    'page callback'=> 'idm_profile_employee_autocomplete',
+    'access arguments' => array('access idm profile'),
+  );
+
+  return $items;
+}
+
+function idm_profile_permission() {
+  return array(
+    'access idm profile' => array(
+      'title' => t('Access IDM profile'),
+      'description' => t('Access IDM user profiles'),
+    ),
+    'administer idm groups' => array(
+      'title' => t('Administer IDM groups'),
+      'description' => t('Administer IDM groups'),
+    ),
+    'administer idm assets' => array(
+      'title' => t('Administer IDM assets'),
+      'description' => t('Administer IDM assets'),
+    )
+  );
+}
+
+function idm_profile_form_alter(&$form, &$form_state, $form_id) {
+	if ($form_id == 'idm_create_new_contractor' || $form_id == 'idm_profile_edit_user_profile' || $form_id == 'idm_create_new_functional_account' || $form_id == 'idm_request_assets_certificate' || $form_id == 'idm_groups_create_group') {
+		$path = drupal_get_path('theme', 'idmtheme');
+		drupal_add_js($path . '/js/jquery.maskedinput.min.js', array('weight' => 1));
+		drupal_add_js($path . '/js/jquery.validate.min.js', array('weight' => 2));
+		drupal_add_js($path . '/js/validate.js', array('weight' => 3));
+	}
+}
+
+function idm_profile_edit_user_profile($form, &$form_state, $userid ='') {
+  if(isset($_SESSION['legacy'])) {
+    $external_url = variable_get('idm_waveset_edit_user_profile_url','https://sso.stg.inbcu.com/nbcucentral/app/pwchange.jsp');
+    drupal_goto($external_url, array('external' => TRUE));
+  } else {
+    drupal_add_js(drupal_get_path('module', 'idm_profile').'/js/script.js');
+    global $user;
+    $user_sso = $userid;
+    if (empty($userid)) {
+      $userid = empty($user->name) ? '' : $user->name;
+    }
+    $info = _idm_profile_get_user($userid);
+    $form['desktop']['submit'] = array (
+      '#type' => 'submit',
+      '#value' => t('Save'),
+      '#attributes' => array('class' => array('submit-button')),
+      '#prefix' => '<div class="user-profile-buttons desktop">',
+    );
+    $form['desktop']['cancel'] = array (
+      '#markup' => '<input type="button" value="Cancel" name="op" id="edit-cancel" class="cancel-button form-submit" onclick="window.location=this.parentNode.href;">',
+      '#prefix' => '<a href="/profile/'.$user_sso.'">',
+      '#suffix' => '</a></div>',
+    );
+    $displayName = (empty($info['displayname'])) ? 'None' : $info['displayname'] ;
+    $job_title = (empty($info['title'])) ? 'None' : $info['title'] ;
+    $company = (empty($info['company'])) ? 'None' : $info['company'] ;
+    $sso = (empty($info['sso'])) ? 'None' : $info['sso'] ;
+    $prof_pic = $info['profile_image']['profile_main'];
+    $img_markup = '<span class="profile-pic"><div class="profile-edit">'.$prof_pic.'</div></span>';
+    if (empty($user_sso) || $user->name == $userid) {
+      $img_markup = '<span class="profile-pic"><div class="profile-edit"><a class="edit-icon" href="#"><span class="icon-edit_icon"></span></a>'.$prof_pic.'</div></span>';
+    }
+    $logged_in_info = _idm_profile_get_user($user->name);
+    //echo $logged_in_info['usertype'];
+    //echo $info['usertype'];
+
+    if (($logged_in_info['usertype'] == 'employee') && ($info['usertype'] == CONTRACTOR)) {
+      $form['user_information'] = array (
+        '#type' => 'fieldset',
+        '#attributes' => array (
+          'class' => array (
+            'user-info'
+          )
+        ),
+        'user_image' => array (
+          '#type' => 'item',
+          '#markup' => $img_markup,
+        ),
+        'displayName' => array (
+          '#type' => 'item',
+          '#markup' => '<span>' . $displayName . '</span>',
+          '#prefix' => '<div class="edit-basic-info">',
+        ),
+        'job_title' => array (
+          '#type' => 'textfield',
+          '#default_value' => $job_title,
+          '#title' => t('Job Title'),
+          '#attributes' => array (
+            'class' => array (
+            'profile-text'
+            )
+          )
+        ),
+        'company' => array (
+          '#type' => 'item',
+          '#markup' => '<span>'. $company .'</span>',
+          '#title' => t('Organization')
+        ),
+        'sso' => array (
+          '#type' => 'item',
+          '#markup' => '<span>' . $sso . '</span>',
+          '#title' => t('SSO'),
+          '#suffix' => '</div>',
+        )
+      );
+    } else {
+      $form['user_information'] = array (
+        '#type' => 'fieldset',
+        '#attributes' => array (
+          'class' => array (
+            'user-info'
+          )
+        ),
+        'user_image' => array (
+          '#type' => 'item',
+          '#markup' => $img_markup,
+        ),
+        'displayName' => array (
+          '#type' => 'item',
+          '#markup' => '<span>' . $displayName . '</span>',
+          '#prefix' => '<div class="edit-basic-info">',
+        ),
+        'job_title' => array (
+          '#type' => 'item',
+          '#markup' => '<span>' . $job_title . '</span>',
+          '#title' => t('Job Title')
+        ),
+        'company' => array (
+          '#type' => 'item',
+          '#markup' => '<span>'. $company .'</span>',
+          '#title' => t('Organization')
+        ),
+        'sso' => array (
+          '#type' => 'item',
+          '#markup' => '<span>' . $sso . '</span>',
+          '#title' => t('SSO'),
+          '#suffix' => '</div>',
+        )
+      );
+    }
+
+    $address = (empty($info['address'])) ? '': $info['address']['work']['streetaddress'];
+    $address .= '<br>';
+    $address .= (empty($info['address']['work']['city'])) ? '' : $info['address']['work']['city'].', ';
+    $address .= (empty($info['address']['work']['state'])) ? '' : $info['address']['work']['state'].' ';
+    $address .= (empty($info['address']['work']['zip'])) ? '' : $info['address']['work']['zip'];
+    $work_email = (empty($info['email']['work'])) ? 'None' : l($info['email']['work'], 'mailto:' . $info['email']['work']);
+    $legal_name = (empty($info['legal_name']))? "None": $info['legal_name'];
+    $personal_mail = empty($info['vendor_email']) ? 'None' : l($info['vendor_email'], 'mailto:' . $info['vendor_email']);
+
+
+    $form['contact_information'] = array (
+      '#type' => 'fieldset',
+      '#title' => t('Contact Information'),
+      '#attributes' => array (
+        'class' => array (
+          'contact-info',
+          'other-info'
+        )
+      ),
+    'legal-name' => array (
+        '#type' => 'item',
+        '#markup' => '<span>' . $legal_name . '</span>',
+        '#title' => t('Legal Name')
+      ),
+      'email' => array (
+        '#type' => 'item',
+        '#markup' => '<span>' . $work_email . '</span>',
+        '#title' => t('Email')
+      ),
+      'phone' => array (
+        '#type' => 'textfield',
+        '#title' => t('Business Phone'),
+        '#default_value' => (empty($info['phone']['work'])) ? '' : $info['phone']['work'],
+        '#attributes' => array (
+          'class' => array (
+            'profile-text'
+          )
+        )
+      ),
+      'mobile' => array (
+        '#type' => 'textfield',
+        '#title' => t('Mobile Phone'),
+        '#default_value' => isset($info['phone']['mobile']) ? $info['phone']['mobile'] : '',
+        '#attributes' => array (
+          'class' => array (
+            'profile-text'
+          )
+        )
+      ),
+      'fax' => array (
+        '#type' => 'textfield',
+        '#title' => t('Fax'),
+        '#default_value' => isset($info['phone']['fax']) ? $info['phone']['fax'] : '',
+        '#attributes' => array (
+          'class' => array (
+            'profile-text'
+          )
+        )
+      ),
+      'address' => array (
+        '#type' => 'item',
+        '#markup' => '<span>' .$address.'</span>',
+        '#title' => t('Address')
+      ),
+      'location_building' => array (
+        '#type' => 'textfield',
+        '#title' => t('Building'),
+        '#maxlength' => BUILDING_MAX_LENGTH,
+        '#default_value' => isset($info['location']['work']['building']) ? $info['location']['work']['building'] : '',
+        '#attributes' => array (
+          'class' => array (
+            'profile-text'
+          )
+        )
+      ),
+     'location_floor' => array (
+        '#type' => 'textfield',
+        '#title' => t('Floor'),
+        '#maxlength' => FLOOR_MAX_LENGTH,
+        '#default_value' => isset($info['location']['work']['floor']) ? $info['location']['work']['floor'] : '',
+        '#attributes' => array (
+          'class' => array (
+            'profile-text'
+          )
+        )
+      ),
+      'location_station' => array (
+        '#type' => 'textfield',
+        '#title' => t('Work Station'),
+        '#maxlength' => LOCATION_MAX_LENGTH,
+        '#default_value' => isset($info['location']['work']['station']) ? $info['location']['work']['station'] : '',
+        '#attributes' => array (
+          'class' => array (
+            'profile-text'
+          )
+        )
+      )
+    );
+    if ($info['usertype'] == CONTRACTOR) {
+      $form['contact_information']['personal_email'] = array (
+      '#type' => 'textfield',
+      '#title' => t('Personal Email'),
+      '#default_value' => isset($info['vendor_email']) ? $info['vendor_email'] : '',
+      '#attributes' => array (
+        'class' => array (
+        'profile-text'
+        )
+      )
+      );
+      if($user->name != $sso) {
+        /*$form['contact_information']['contractor_company'] = array (
+        '#type' => 'select',
+        '#title' => t('Company'),
+        '#options' => idm_profile_get_company('Company'),
+        '#default_value' => (empty($info['custom_company'])) ? '' : $info['custom_company'],
+        '#required' => TRUE,
+          '#prefix' => '<div class="company"><span title="This field is required." class="form-required">*</span>',
+          '#suffix' => '</div>',
+        '#chosen' => true,
+        '#attributes' => array (
+          'class' => array (
+          )
+        )
+        );*/
+        $form['contact_information']['contractor_company'] = array (
+        '#type' => 'item',
+        '#title' => t('Company'),
+        '#markup' => '<span>'.$info['custom_company'].'</span>',
+        );
+      }
+      else {
+        $form['contact_information']['contractor_company'] = array (
+        '#type' => 'item',
+        '#title' => t('Company'),
+        '#markup' => '<span>'.$info['custom_company'].'</span>',
+        );
+      }
+      $form['contact_information']['preferred-name'] = array (
+      '#type' => 'textfield',
+      '#title' => t('Preferred Name'),
+      '#default_value' => (empty($info['preferred_name'])) ? '' : $info['preferred_name'],
+      '#attributes' => array (
+        'class' => array (
+        'profile-text'
+        )
+      ),
+      '#weight' => -1,
+      );
+    }
+    else {
+      $form['contact_information']['personal_email_emp'] = array (
+      '#type' => 'item',
+      '#title' => t('Personal Email'),
+      '#markup' => '<span>' . $personal_mail . '</span>'
+      );
+      $form['contact_information']['preferred-name'] = array (
+      '#type' => 'item',
+      '#title' => t('Preferred Name'),
+      '#markup' => (empty($info['preferred_name'])) ? '<span>None</span>' : '<span>'.$info['preferred_name']. '</span>',
+      '#weight' => -1,
+      );
+      //unset($form['contact_information']['preferred-name']);
+    }
+    $form['mobile']['submit'] = array (
+      '#type' => 'submit',
+      '#value' => t('Save'),
+      '#attributes' => array('class' => array('submit-button')),
+      '#prefix' => '<div class="user-profile-buttons mobile">',
+    );
+    $form['mobile']['cancel'] = array (
+      '#markup' => '<input type="button" value="Cancel" name="op" id="edit-cancel" class="cancel-button form-submit" onclick="window.location=this.parentNode.href;">',
+      '#prefix' => '<a href="/profile/'.$user_sso.'">',
+      '#suffix' => '</a></div>',
+    );
+    $startdate = isset($info['startdate']) ? $info['startdate'] : 'None';
+    $enddate = isset($info['enddate']) ? $info['enddate'] : 'None';
+    $supervisor = isset($info['managerfullname']) ? $info['managerfullname'] : 'None';
+    $company = isset($info['company']) ? $info['company'] : 'None';
+    $sub_business = isset($info['sub_business']) ? $info['sub_business'] : 'None';
+    $form['job_information'] = array (
+      '#type' => 'fieldset',
+      '#title' => t('Job Information'),
+      '#attributes' => array (
+        'class' => array (
+          'other-info'
+        )
+      ),
+      'start_date' => array (
+        '#type' => 'item',
+        '#markup' => '<span>' . $startdate  . '</span>',
+        '#title' => t('Start Date')
+      ),
+      'exp_date' => array (
+        '#type' => 'item',
+        '#markup' => '<span>' . $enddate  . '</span>',
+        '#title' => t('Expiration Date')
+      ),
+      'supervisor' => array (
+        '#type' => 'item',
+        '#markup' => '<span>' .  $supervisor . '</span>',
+        '#title' => t('Supervisor')
+      ),
+      'company' => array (
+        '#type' => 'item',
+        '#markup' => '<span>' . $company . '</span>',
+        '#title' => t('Organization')
+      ),
+      'sub_business' => array (
+        '#type' => 'item',
+        '#markup' => '<span>' . $sub_business . '</span>',
+        '#title' => t('Sub Business')
+      )
+    );
+    $mfc = isset($info['finance']['mfc']) ? $info['finance']['mfc'] : 'None';
+    $wbse = isset($info['finance']['wbse']) ? $info['finance']['wbse'] : 'None';
+    $internalorder = isset($info['finance']['internalorder']) ? $info['finance']['internalorder'] : 'None';
+    $currency = isset($info['finance']['currency']) ? $info['finance']['currency'] : 'None';
+    $company = isset($info['finance']['company']) ? $info['finance']['company'] : 'None';
+    //$phone_code = idm_profile_get_location_details_from_solr($info['location_id'], TRUE, TRUE);
+    $location_details = taxonomy_get_term_by_name($info['location_id']);
+    $phone_code = isset($location_details->field_post_code[LANGUAGE_NONE][0]['safe_value']) ? $location_details->field_post_code[LANGUAGE_NONE][0]['safe_value'] : 1;
+    //Temporarily removing the financial information (Refer IP 288 in JIRA)
+    /*$form['financial_information'] = array (
+      '#type' => 'fieldset',
+      '#title' => t('Financial Information'),
+      '#attributes' => array (
+        'class' => array (
+          'other-info'
+        )
+      ),
+      'mfc' => array (
+        '#type' => 'item',
+        '#markup' => '<span>' . $mfc . '</span>',
+        '#title' => t('MFC')
+      ),
+      'wbse' => array (
+        '#type' => 'item',
+        '#markup' => '<span>' . $wbse . '</span>',
+        '#title' => t('WBSE')
+      ),
+      'internal_order' => array (
+        '#type' => 'item',
+        '#markup' => '<span>' . $internalorder . '</span>',
+        '#title' => t('Internal Order')
+      ),
+      'currency' => array (
+        '#type' => 'item',
+        '#markup' => '<span>' . $currency . '</span>',
+        '#title' => t('Currency')
+      ),
+      'hierarchy' => array (
+        '#type' => 'item',
+        '#markup' => '<span>' . $company . '</span>',
+        '#title' => t('Hierarchy of Company Code')
+      )
+    );*/
+    if ($info['usertype'] == 'employee') {
+       unset($form['job_information']['exp_date']);
+    }
+    $form['profile_id'] = array(
+        '#type' => 'hidden',
+        '#value' => $userid
+    );
+    $form['usertype'] = array(
+        '#type' => 'hidden',
+        '#value' => $info['usertype'],
+        '#attributes' => array('id' => 'edit-usertype'),
+    );
+    $form['location_id'] = array(
+        '#type' => 'hidden',
+        '#value' => $info['location_id']
+    );
+    $form['phone_code'] = array(
+        '#type' => 'hidden',
+        '#attributes' => array('id' => 'phone_code'),
+        '#value' => !empty($phone_code) ? $phone_code : 1
+    );
+    return $form;
+  }
+}
+/**
+ * form validate for idm_profile_edit_user_profile
+ */
+function idm_profile_edit_user_profile_validate($form, &$form_state) {
+  global $user;
+  $profile_id = !empty($form_state['values']['profile_id']) ? $form_state['values']['profile_id'] : DEBUG_PROFILE_ID;
+  $requestor_id = ($user->uid == 1) ? DEBUG_REQUESTOR_ID : $user->name;
+
+  $user_info_array['schemas'][] = 'urn:scim:schemas:core:1.0';
+
+  /*$name = new stdClass();
+  $name->nickName = $form_state['values']['preferred-name'];
+	$user_info_array['name'] = $name;*/
+  if(isset($form_state['values']['preferred-name'])){
+    $user_info_array['custom_preferredName'] = $form_state['values']['preferred-name'];
+  }
+
+  $phones['work'] = !empty($form_state['input']['phone']) ? $form_state['input']['phone'] : '';
+  $phones['cellphone'] = !empty($form_state['input']['mobile']) ? $form_state['input']['mobile'] : '';
+  $phones['fax'] = !empty($form_state['input']['fax']) ? $form_state['input']['fax'] : '';
+
+  foreach ($phones as $type => $phone) {
+    if (!empty($phone)) {
+      preg_match('/(.*)[\s]+\(([\d]{3})\)[\s]+([\d]{3})-([\d]{4})/', $phone, $phone_details);
+      if(!empty($phone_details)){
+        $work_phone['type'] = $type;
+        $work_phone['value'] = $phone_details[0];
+        $work_phone['bCountry'] = DEFAULT_COUNTRY_CODE;
+        $work_phone['bAreaCode'] = $phone_details[2];
+        $work_phone['bLocalNumber'] = $phone_details[3].$phone_details[4];
+        $user_info_array['phoneNumbers'][] = $work_phone;
+      }
+    }
+    else {
+        $work_phone['type'] = $type;
+        $work_phone['value'] = '';
+        $work_phone['bCountry'] = '';
+        $work_phone['bAreaCode'] = '';
+        $work_phone['bLocalNumber'] = '';
+        $user_info_array['phoneNumbers'][] = $work_phone;
+    }
+  }
+  $location['type'] = 'work';
+  $location['custom_building'] = !empty($form_state['input']['location_building']) ? $form_state['input']['location_building'] : '';
+  $location['custom_floor'] = !empty($form_state['input']['location_floor']) ? $form_state['input']['location_floor'] : '';
+  $location['custom_office'] = !empty($form_state['input']['location_station']) ? $form_state['input']['location_station'] : '';
+  $user_info_array['addresses'][] = $location;
+  $user_info_array['custom_locationid'] = $form_state['values']['location_id'];
+  if (!empty($form_state['values']['personal_email'])) {
+   /* $email['type'] = 'alternate';
+    $email['value'] = $form_state['values']['personal_email'];
+    $user_info_array['emails'][] = $email;*/
+    $user_info_array['custom_supplierEmail'] =  $form_state['values']['personal_email'];
+  }
+  if(!empty($form_state['values']['job_title'])){
+    $user_info_array['custom_jobTitle'] =  $form_state['values']['job_title'];
+  }
+  if(!empty($form_state['values']['contractor_company'])){
+    $user_info_array['custom_company'] =  $form_state['values']['contractor_company'];
+  }
+
+  $user_info_json = json_encode($user_info_array);
+
+  $url = variable_get('rest_api_check_url').'/internal/users/';
+  $update_url = $url.$profile_id.'?requestor='.$requestor_id;
+  $userid = variable_get('rest_api_check_http_auth_username', '999999001');
+  $pass = variable_get('rest_api_check_http_auth_pass', 'test123test');
+
+  $result = idm_profile_execute_curl($update_url, $user_info_json, 'PUT');
+  $result_json = json_decode($result);
+
+  /*
+  // open connection
+  $ch = curl_init();
+  curl_setopt($ch, CURLOPT_URL, $update_url);
+  curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+  curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+  curl_setopt($ch, CURLOPT_USERPWD, $userid . ":" . $pass);
+  curl_setopt($ch, CURLOPT_UNRESTRICTED_AUTH, TRUE);
+  curl_setopt($ch, CURLOPT_HTTPHEADER, array ("Content-Type: application/json;"));
+  curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
+  curl_setopt($ch, CURLOPT_POSTFIELDS, $user_info_json);
+  if(LOCAL_DEV){
+    curl_setopt($ch, CURLOPT_PROXY, "");
+  }
+
+  // execute post
+  $result = json_decode(curl_exec($ch));
+  $info = curl_getinfo($ch);
+  */
+
+  if($result_json->op_status == SUCCESS){
+    //cache_clear_all('*', 'cache', TRUE);
+    ctools_object_cache_clear('api', 'profile_data'.$profile_id);
+    //clear home page and my workers table data of job title is being edited
+    if(!empty($form_state['values']['job_title'])){
+      ctools_object_cache_clear('api', 'mystaff');
+    }
+    // returning result
+    //drupal_set_message(t('Request has been submitted. Please allow up to 60 minutes for the data to flow to downstream applications.'));
+	drupal_set_message(t('<img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">'.'Request has been submitted. Please allow up to 60 minutes for the data to flow to downstream applications.'));
+      //Redirect back to the profile( depending up on whether the profile is of the logged-in user or not)
+    $redirect_url = (DEBUG || ($requestor_id != $profile_id)) ? 'profile/'.$profile_id :  'profile';
+    $form_state['redirect'] = url($redirect_url, array('absolute' => TRUE));
+  }elseif(!PROD){
+    //drupal_set_message(t('Sorry, not able to update your profile. Please try after some time'));
+	  form_set_error('', '<img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">'.t('Service Error !!!'));
+    //IP-1134
+    //drupal_set_message(filter_xss('<img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">'.'DEBUG Info<br>URL<pre>' . print_r($update_url, TRUE) . '</pre>'.'USER JSON<pre>' . print_r($user_info_json, TRUE) . '</pre>'.'RESULT<pre>' . print_r($result_json, TRUE) . '</pre>', $allowed_tags = array('img')));
+    //form_set_error('', t('Service Error !!!'));
+    //drupal_set_message('DEBUG Info<br>URL<pre>' . print_r($update_url, TRUE) . '</pre>');
+    //drupal_set_message('USER JSON<pre>' . print_r($user_info_json, TRUE) . '</pre>');
+    //drupal_set_message('RESULT<pre>' . print_r($result_json, TRUE) . '</pre>');
+  }
+}
+
+/* Place holded function for editing user info */
+function _idm_profile_edit_user_info($userid = '') {
+  return _idm_profile_get_user_info('user_info_edit', $userid);
+}
+
+/**
+ * Implementing hook_block_info().
+ */
+function idm_profile_block_info() {
+  $blocks['user_info'] = array (
+    'info' => t('User Profile')
+  );
+  $blocks['my_profile'] = array (
+    'info' => t('My Profile Block')
+  );
+  $blocks['profile_progress'] = array (
+    'info' => t('Profile Progress')
+  );
+  return $blocks;
+}
+
+/**
+ * Implementing hook_block_view().
+ *
+ * @param String $delta
+ */
+function idm_profile_block_view($delta) {
+  $block = array ();
+  switch ($delta) {
+    case 'user_info' :
+      $block['content'] = _idm_profile_get_user_info($delta);
+      $block['subject'] = '';
+      break;
+    case 'my_profile' :
+      $block['content'] = _idm_profile_get_user_info($delta);
+      $block['subject'] = '';
+      break;
+    case 'profile_progress' :
+      drupal_add_js(drupal_get_path('module', 'idm_profile').'/js/jquery.knob.js', array('scope' => 'footer'));
+      drupal_add_js(drupal_get_path('module', 'idm_profile').'/js/script.js', array('scope' => 'footer'));
+      drupal_add_js(drupal_get_path('module', 'idm_profile') . '/js/excanvas.js', array('scope' => 'footer'));
+      $block['content'] = _idm_profile_get_progress_bar();
+      $block['subject'] = '';
+      break;
+  }
+  return $block;
+}
+
+/**
+ * method for building user profile
+ *
+ * @param String $delta
+ * @param String $userid
+ */
+function _idm_profile_get_user_info($delta, $userid = '') {
+  drupal_add_js(drupal_get_path('module', 'idm_profile').'/js/script.js', array('scope' => 'footer'));
+  global $user;
+  if (empty($userid)) {
+    $userid = empty($user->name) ? '' : $user->name;
+  }
+  $info = _idm_profile_get_user($userid);
+  $info['buttons_flag'] = '';
+  //TODO - Remove the super admin access to this menu
+  $info['sso'] = isset($info['sso']) ? $info['sso'] : '';
+  if(($info['managerid'] == $user->name) || ($user->uid == 1)) {
+	$info['buttons_flag'] = strtolower($info['usertype']);
+  } else if($info['sso'] == $user->name) {
+    $info['buttons_flag'] = 'profile';
+  }
+  $var['info'] = $info;
+  $var['manager_lookup_field'] = idm_profile_get_manager_lookup_field($userid);
+  $info['usertype'] = isset($info['usertype']) ? $info['usertype'] : '';
+  if($info['usertype'] == "functional" && $delta != 'my_profile'){
+   return theme('functional_user_info', $var);
+  }else {
+    return theme($delta, $var);
+  }
+}
+
+/**
+ * Wrapper method for get the User Profile details.
+ *
+ * @param String $userid
+ */
+function _idm_profile_get_user($userid) {
+  if(empty($userid)) return;
+
+  ctools_include('object-cache');
+  $profile_data = ctools_object_cache_get('api', 'profile_data'.$userid);
+  if(!empty($profile_data)){
+    return $profile_data;
+  }
+  $url = variable_get('rest_api_check_url').'/internal/users';
+  $url_get = $url . '/' . $userid;
+  $result = _idm_portal_get_api_data($url_get);
+  $return = _idm_profile_format_user_info(json_decode($result->data));
+  ctools_object_cache_set('api', 'profile_data'.$userid, $return);
+  return $return;
+}
+
+function _idm_profile_format_user_info($data) {
+  global $user;
+  $displayName = "";
+  $userinfo = array();
+  if(!empty($data->id)){
+    $userinfo['sso'] = $data->id;
+    $userinfo['profile_image']['profile_main'] = _idm_profile_get_profile_image('profile_main', $data->id);
+    $userinfo['profile_image']['profile_sidebar'] = _idm_profile_get_profile_image('profile_sidebar', $data->id);
+    $userinfo['profile_image']['profile_header'] = _idm_profile_get_profile_image('profile_header', $data->id);
+  } else {
+    $userinfo['profile_image']['profile_main'] = _idm_profile_get_profile_image('profile_main');
+    $userinfo['profile_image']['profile_sidebar'] = _idm_profile_get_profile_image('profile_sidebar');
+    $userinfo['profile_image']['profile_header'] = _idm_profile_get_profile_image('profile_header');
+  }
+  $username_flag = false;
+  $userinfo['displayname'] = idm_profile_format_display_name($data,$username_flag);
+  $userinfo['legal_name'] = $data->name->givenName;
+  if(!empty($data->name->familyName)){
+    $userinfo['legal_name'] .= " ".$data->name->familyName;
+  }
+	if(!empty($data->name->formatted)){
+    $userinfo['formatted'] .= " ".$data->name->formatted;
+  }
+  $userinfo['preferred_name'] = !empty($data->custom_preferredName) ? $data->custom_preferredName : "";
+  $userinfo['location_id'] = (empty($data->custom_locationId)) ? '' : $data->custom_locationId;
+  $userinfo['managerid'] = (empty($data->manager->managerId)) ? '' : $data->manager->managerId;
+  if(!empty($data->manager->custom_managerfullname)){
+  	$managerfullname = explode(",", $data->manager->custom_managerfullname);
+  	$userinfo['managerfullname'] = trim($managerfullname[1]).' '.trim($managerfullname[0]);
+  }
+
+  if(!empty($data->custom_suborgsegment)){
+    $userinfo['sub_business'] = $data->custom_suborgsegment;
+  }
+  if(!empty($data->custom_hrmanager)){
+    $userinfo['hrmanager'] = $data->custom_hrmanager->custom_hrmanagername;
+  }
+  if(!empty($data->addresses)){
+    foreach($data->addresses as $address){
+      $userinfo['location'][$address->type]['building'] = (empty($address->custom_building)) ? '' : $address->custom_building;
+      $userinfo['location'][$address->type]['floor'] = (empty($address->custom_floor)) ? '' : $address->custom_floor;
+      $userinfo['location'][$address->type]['station'] = (empty($address->custom_office)) ? '' : $address->custom_office;
+    }
+  }
+
+  if(!empty($data->emails)){
+    foreach($data->emails as $email){
+      $userinfo['email'][$email->type] = $email->value;
+    }
+  }
+  if(!empty($data->phoneNumbers)){
+    foreach($data->phoneNumbers as $phone){
+      $userinfo['phone'][$phone->type] = $phone->value;
+    }
+  }
+  if(!empty($data->addresses)){
+    foreach($data->addresses as $address){
+      $userinfo['address'][$address->type]['streetaddress'] = (empty($address->streetAddress)) ? '' : $address->streetAddress;
+      $userinfo['address'][$address->type]['streetaddress2'] = (empty($address->custom_addressLine2)) ? '' : $address->custom_addressLine2;
+      $userinfo['address'][$address->type]['city'] = (empty($address->locality)) ? '' : ucwords(strtolower($address->locality));
+      $userinfo['address'][$address->type]['state'] = (empty($address->region)) ? '' : $address->region;
+      $userinfo['address'][$address->type]['country'] = (empty($address->country)) ? '' : $address->country ;
+      $userinfo['address'][$address->type]['zip'] = (empty($address->postalCode)) ? '' : $address->postalCode;
+    }
+  }
+  if(!empty($data->custom_startdate )){
+	$userinfo['startdate'] = date("m/d/Y", strtotime($data->custom_startdate));
+  }
+  if(!empty($data->custom_enddate )){
+	$userinfo['enddate'] = date("m/d/Y", strtotime($data->custom_enddate));
+  }
+
+  if (!empty($data->userType)) {
+    if (!empty($data->title) && $data->userType == "Employee" ) {
+      $userinfo['title'] = $data->title;
+    } else if (!empty($data->custom_jobTitle) && ($data->userType == "Contractor" || $data->userType == "Functional")) {
+      $userinfo['title'] = $data->custom_jobTitle;
+    } else {
+      $userinfo['title'] = 'None';
+    }
+  }
+
+  if(!empty($data->userType)){
+      $userinfo['usertype'] = drupal_strtolower($data->userType);
+  }
+
+  $userinfo['company'] = (empty($data->custom_orgsegment)) ? 'None' : $data->custom_orgsegment;
+  $userinfo['job_function'] = (empty($data->custom_jobfunction)) ? 'None' : $data->custom_jobfunction;
+  $userinfo['application_id'] = (empty($data->custom_applicationid)) ? 'None' : $data->custom_applicationid;
+  $userinfo['vendor_email'] = (empty($data->custom_supplierEmail)) ? '' : $data->custom_supplierEmail;
+
+  if(!empty($data->custom_financeAttributes)){
+    if(!empty($data->custom_financeAttributes->custom_AlternateCompanyCode )){
+        $userinfo['finance']['company'] = $data->custom_financeAttributes->custom_AlternateCompanyCode;
+    }
+    if(!empty($data->custom_financeAttributes->custom_AlternateProfitCenter )){
+        $userinfo['finance']['profitcenter'] = $data->custom_financeAttributes->custom_AlternateProfitCenter;
+    }
+    if(!empty($data->custom_financeAttributes->custom_AlternateCurrency)){
+      $userinfo['finance']['currency'] = $data->custom_financeAttributes->custom_AlternateCurrency;
+    }
+    if(!empty($data->custom_financeAttributes->custom_AlternateInternalOrder)){
+      $userinfo['finance']['internalorder'] = $data->custom_financeAttributes->custom_AlternateInternalOrder;
+    }
+    if (! empty($data->custom_financeAttributes->custom_AlternateMFC)) {
+      $userinfo['finance']['mfc'] = $data->custom_financeAttributes->custom_AlternateMFC;
+    }
+    if (! empty($data->custom_financeAttributes->custom_AlternateWBSE)) {
+      $userinfo['finance']['wbse'] = $data->custom_financeAttributes->custom_AlternateWBSE;
+    }
+    if (! empty($data->custom_financeAttributes->custom_AlternateCostObjecttype)) {
+      $userinfo['finance']['costobjecttype'] = $data->custom_financeAttributes->custom_AlternateCostObjecttype;
+    }
+    if (! empty($data->custom_financeAttributes->custom_AlternateAccountCode)) {
+      $userinfo['finance']['accountcode'] = $data->custom_financeAttributes->custom_AlternateAccountCode;
+    }
+  }
+  if(!empty($data->custom_amsApplicationId )){
+	$userinfo['amsapplicationId'] = $data->custom_amsApplicationId;
+  }
+  if(!empty($data->custom_amsApplicationName )){
+	$userinfo['amsapplicationName'] = $data->custom_amsApplicationName;
+  }
+  if(!empty($data->custom_company )){
+	$userinfo['custom_company'] = $data->custom_company;
+  }
+  if(!empty($data->roles)){
+    $userinfo['roles'] = $data->roles;
+  }
+  if(!empty($data->custom_sponsorshipstatus)){
+    $userinfo['sponsorshipstatus'] = $data->custom_sponsorshipstatus;
+  }
+  return $userinfo;
+}
+
+/**
+ * Implementing hook_theme().
+ */
+function idm_profile_theme() {
+  $themes = array (
+    'user_info' => array (
+      'template' => 'user_info',
+      'variables' => array (
+        'vars' => array (
+          ''
+        )
+      )
+    ),
+    'user_own_info' => array (
+      'template' => 'user_own_info',
+      'variables' => array (
+        'vars' => array (
+          ''
+        )
+      )
+    ),
+    'user_emp_info' => array (
+      'template' => 'user_emp_info',
+      'variables' => array (
+        'vars' => array (
+          ''
+        )
+      )
+    ),
+    'my_profile' => array (
+      'template' => 'my_profile',
+      'variables' => array (
+        'vars' => array (
+          ''
+        )
+      )
+    ),
+    'user_info_edit' => array (
+      'template' => 'user_info_edit',
+      'variables' => array (
+        'vars' => array (
+          ''
+        )
+      )
+    ),
+    'profile_progress_bar' => array (
+      'template' => 'profile_progress_bar',
+      'variables' => array (
+        'vars' => array (
+          ''
+        )
+      )
+    ),
+	'renew_mobile' => array (
+      'template' => 'renew_mobile',
+      'variables' => array (
+        'vars' => array (
+          ''
+        )
+      )
+    ),
+	'transfer_mobile' => array (
+      'template' => 'transfer_mobile',
+      'variables' => array (
+        'vars' => array (
+          ''
+        )
+      )
+    ),
+	'terminate_mobile' => array (
+      'template' => 'terminate_mobile',
+      'variables' => array (
+        'vars' => array (
+          ''
+        )
+      )
+    ),
+	'revoke_mobile' => array (
+      'template' => 'revoke_mobile',
+      'variables' => array (
+        'vars' => array (
+          ''
+        )
+      )
+    ),
+	'functional_user_info' => array (
+      'template' => 'functional_user_info',
+      'variables' => array (
+        'vars' => array (
+          ''
+        )
+      )
+    ),
+  );
+  return $themes;
+}
+
+/**
+ * Callback for progress bar block.
+ */
+function _idm_profile_get_progress_bar() {
+	if (!isset($_SESSION['legacy'])) {
+    global $user;
+    $path = variable_get('supportcentral_get_url','http://supportcentral.inbcu.com/images/person/temp/'). $user->name . '.jpg';
+    $image = theme('imagecache_external', array (
+      'path' => $path,
+      'style_name' => 'profile_header'
+    ));
+    $info = _idm_profile_get_user($user->name);
+    //$info = $_SESSION[$user->name];
+    $perc_completed = 0;
+    $field_show = '';
+    $field_per = 0;
+    $percentages = array('phone', 'work_location', 'mobile' , 'picture');
+    $percentage = 100/count($percentages);
+    $field_per = $percentage;
+    if (!empty($info['phone']['work'])) {
+      $perc_completed += $percentage;
+    }
+    else {
+      $field_show = 'phone';
+    }
+    if (!empty($image)) {
+      $perc_completed += $percentage;
+    }
+    else if (!$field_show){
+      $field_show = 'picture';
+    }
+    if (!empty($info['location'])) {
+      $perc_completed += $percentage;
+    }
+    else if (!$field_show){
+      $field_show = 'work location';
+    }
+    if (!empty($info['phone']['mobile'])) {
+      $perc_completed += $percentage;
+    }
+    else if (!$field_show){
+      $field_show = 'mobile';
+    }
+    $var['pers_to_be_completed'] = 100-$perc_completed;
+    $var['field'] = $field_show;
+    $var['field_per'] = $field_per;
+    return theme('profile_progress_bar', $var);
+  }
+}
+
+function _idm_profile_get_profile_image($style = 'profile_header', $userid = '') {
+  global $user, $base_url;
+  $user->name = isset($user->name) ? $user->name : '';
+  $useridpic = empty($userid) ? $user->name : $userid;
+  $image = '';
+  if (!empty($useridpic)) {
+    $path = variable_get('supportcentral_get_url','http://supportcentral.inbcu.com/images/person/temp/') . $useridpic . '.jpg';
+    $image = theme('imagecache_external', array (
+      'path' => $path,
+      'style_name' => $style
+    ));
+  }
+
+  if (empty($image)) {
+    $variables = array(
+      'path' => $base_url . '/sites/all/themes/idmtheme/images/profile.png',
+	  'style_name' => $style
+    );
+    $image = theme('imagecache_external', $variables);
+  }
+
+  return $image;
+}
+
+function idm_profile_progress_save($field, $field_val) {
+  global $user;
+
+  if ($field != 'location'){
+  	$field_val = trim(urldecode($field_val));
+  }
+  $profile_id = $requestor_id = $user->name;
+  $info = _idm_profile_get_user($profile_id);
+  $user_info_array['schemas'][] = 'urn:scim:schemas:core:1.0';
+  $phones = $info['phone'];
+  $phone_set = FALSE;
+
+  switch ($field) {
+		case 'phone':
+			$phones['work'] = '+'.$field_val;
+			$phone_set = TRUE;
+			break;
+		case 'location':
+			$addr = explode("wlspidm", trim($field_val));
+			$location['type'] = 'work';
+			$location['custom_building'] = empty($addr[0])? "": $addr[0];
+			$location['custom_floor'] = empty($addr[1])? "": $addr[1];
+			$location['custom_office'] = empty($addr[2])? "": $addr[2];
+			$user_info_array['addresses'][] = $location;
+			break;
+		case 'mobile':
+			$phones['cellphone'] = '+'.$field_val;
+			$phone_set = TRUE;
+			break;
+	}
+  if ($phone_set) {
+	  foreach ($phones as $type => $phone) {
+		if (!empty($phone)) {
+		  preg_match('/(.*)[\s]+\(([\d]{3})\)[\s]+([\d]{3})-([\d]{4})/', $phone, $phone_details);
+		  if(!empty($phone_details)){
+			$work_phone['type'] = $type;
+			$work_phone['value'] = $phone_details[0];
+			$work_phone['bCountry'] = DEFAULT_COUNTRY_CODE;
+			$work_phone['bAreaCode'] = $phone_details[2];
+			$work_phone['bLocalNumber'] = $phone_details[3].$phone_details[4];
+			$user_info_array['phoneNumbers'][] = $work_phone;
+		  }
+		}
+	  }
+  }
+  $user_info_array['custom_locationid'] = !empty($info['location_id']) ? $info['location_id'] : DEFAULT_FUNCTIONAL_LOC_ID;
+  $url = variable_get('rest_api_check_url').'/internal/users/';
+  $update_url = $url.$profile_id.'?requestor='.$requestor_id;
+  $userid = variable_get('rest_api_check_http_auth_username', '999999001');
+  $pass = variable_get('rest_api_check_http_auth_pass', 'test123test');
+  $user_info_json = json_encode($user_info_array);
+  $result = json_decode(idm_profile_execute_curl($update_url, $user_info_json, 'PUT'));
+
+  if($result->op_status == SUCCESS){
+    //cache_clear_all('*', 'cache', TRUE);
+    ctools_object_cache_clear('api', 'profile_data'.$profile_id);
+    $message = t('<img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">'.'Request has been submitted. Please allow up to 60 minutes for the data to flow to downstream applications.');
+	//$message = t('Request has been submitted. Please allow up to 60 minutes for the data to flow to downstream applications.');
+    echo $result->op_status;
+  }elseif(!PROD){
+    //drupal_set_message(t('Sorry, not able to update your profile. Please try after some time'));
+	  form_set_error('', '<img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">'.t('Service Error !!!'));
+    //IP-1134
+    //drupal_set_message(filter_xss('<img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">'.'DEBUG Info<br>URL<pre>' . print_r($update_url, TRUE) . '</pre>'.'<br />USER JSON<pre>' . print_r($user_info_json, TRUE) . '</pre>'.'<br />RESULT<pre>' . print_r($result, TRUE) . '</pre>', $allowed_tags = array('img')));
+    //form_set_error('', t('Service Error !!!'));
+    //drupal_set_message('DEBUG Info<br>URL<pre>' . print_r($update_url, TRUE) . '</pre>');
+    //drupal_set_message('USER JSON<pre>' . print_r($user_info_json, TRUE) . '</pre>');
+    //drupal_set_message('RESULT<pre>' . print_r($result, TRUE) . '</pre>');
+  }
+}
+
+function idm_create_new_contractor($form, &$form_state) {
+  if(isset($_SESSION['legacy'])) {
+    $external_url = variable_get('idm_waveset_create_contractor_url','https://sso.stg.inbcu.com/nbcucentral/app/pwchange.jsp');
+    drupal_goto($external_url, array('external' => TRUE));
+  } else {
+    global $user;
+    $profile_id = $user->name;
+    $info = _idm_profile_get_user($profile_id);
+    //Manage name calculation
+    $manager_name = '';
+    $user_type = '';
+    $info['usertype'] = isset($info['usertype']) ? $info['usertype'] : '';
+    $user_type = $info['usertype'];
+    if ($user_type == 'employee') {
+      $manager_name = $info['displayname'].' ('.$info['sso'].')';
+    } elseif ($user_type == 'contractor' || $user_type == 'functional') {
+      $manager_name = $info['managerfullname'].' ('.$info['managerid'].')';
+    }
+    //Location calculation
+    if (isset($info['address']['work']['city'])) {
+      $address_work_city = ', '.$info['address']['work']['city'];
+    }
+    if (isset($info['address']['work']['state'])) {
+      $address_work_state = ', '.$info['address']['work']['state'];
+    }
+    if (isset($info['address']['work']['zip'])) {
+      $address_work_zip = ', '.$info['address']['work']['zip'];
+    }
+    $work_location = ucwords($info['address']['work']['streetaddress'].$address_work_city.$address_work_state.$address_work_zip);
+    $location_id = $info['location_id'];
+    $location_details = taxonomy_get_term_by_name($location_id);
+    $phone_code = isset($location_details->field_post_code[LANGUAGE_NONE][0]['safe_value']) ? $location_details->field_post_code[LANGUAGE_NONE][0]['safe_value'] : 1;
+   // $phone_code = idm_profile_get_location_details_from_solr($location_id, TRUE, TRUE);
+    drupal_add_js(drupal_get_path('module', 'idm_profile').'/js/script.js');
+    $form['mgr'] =  array(
+      '#type' => 'fieldset',
+      '#attributes' => array (
+      'class' => array (
+        'mgr-info'
+      )
+      ),
+    );
+    $form['mgr']['title'] = array(
+        '#markup' => 'Create New Contractor',
+        '#prefix' => '<div class="title"><h2>',
+        '#suffix' => '</h2></div>'
+    );
+    $form['mgr']['name'] = array(
+        '#title' => t('Manager'),
+        '#type' => 'textfield',
+        '#required' => TRUE,
+        '#autocomplete_path' => 'autocomplete/manager',
+        '#prefix' => '<div class="name"><span title="This field is required." class="form-required">*</span>',
+        '#suffix' => '<label for="edit-name" generated="true" class="error" style="display: none;">Please select a manager</label><div class="icon-search_icon"></div><button class="small_button hover-blue" onclick="javascript: return false;">Search</button></div>',
+        '#default_value' => $manager_name
+    );
+    if(isset($manager_name)) {
+      $form['mgr']['nam_hidden'] = array(
+          '#type' => 'hidden',
+          '#default_value' => 'mgrselected',
+          '#attributes' => array (
+           'id' => 'nam_id'
+          ),
+      );
+    } else {
+      $form['mgr']['nam_hidden'] = array(
+          '#type' => 'hidden',
+          '#default_value' => 'not mgrselected',
+          '#attributes' => array (
+           'id' => 'nam_id'
+          ),
+      );
+    }
+    $form['mgr']['address_label'] = array(
+        '#title' => t('Address'),
+        '#type' => 'item',
+        '#markup' => "<div class=\"address-label\"></div>",
+        '#prefix' => '<div class="address adr_label"><span title="This field is required." class="form-required">*</span>',
+        '#suffix' => '<button class="small_button hover-blue">Change</button></div>'
+    );
+    $form['mgr']['address_hidden'] = array(
+        '#type' => 'hidden',
+        '#default_value' => $location_id,
+        '#attributes' => array (
+          'id' => 'address_id'
+        ),
+    );
+    $form['mgr']['address'] = array(
+        '#title' => t('Address'),
+        '#type' => 'textfield',
+        '#required' => TRUE,
+        '#autocomplete_path' => 'autocomplete/address',
+        '#prefix' => '<div class="address adr_tf"><span title="This field is required." class="form-required">*</span>',
+        '#suffix' => '<div class="icon-search_icon"></div><button class="small_button hover-blue" onclick="javascript: return false;">Search</button></div>',
+        '#default_value' => $work_location
+    );
+    $form['mgr']['work_location'] = array(
+        '#type' => 'hidden',
+        '#attributes' => array (
+          'id' => 'work_location'
+        ),
+        '#default_value' => $work_location,
+    );
+    $form['mgr']['request'] = array(
+        '#title' => t('Request a NBCUniversal Mailbox'),
+        '#type' => 'checkbox',
+        '#prefix' => '<div class="request"><div class="checkbox-row"></div>',
+        '#suffix' => '</div>'
+    );
+    $form['mgr']['request_check'] = array(
+        '#type' => 'hidden',
+        '#default_value' => '0',
+        '#attributes' => array (
+          'id' => 'request_check'
+        ),
+    );
+    $form['mgr']['region'] = array(
+        '#title' => t('Region'),
+        '#type' => 'select',
+      '#prefix' => '<div class="region" style="display:none;">',
+      '#suffix' => '</div>',
+        //'#options' => array('East Coast', 'West Coast', 'International'),
+        '#options' => array('East Coast', 'West Coast'),
+        '#chosen' => TRUE,
+    );
+    $form['contractor'] =  array(
+      '#type' => 'fieldset',
+      '#attributes' => array (
+      'class' => array (
+        'contractor-info'
+      )
+      ),
+    );
+    $form['contractor']['title'] = array(
+        '#markup' => 'Contractor 1',
+        '#prefix' => '<div class="title"><h2>',
+        '#suffix' => '</h2></div>'
+    );
+    $form['contractor']['first-name'] = array(
+        '#title' => t('Legal First Name'),
+        '#type' => 'textfield',
+        '#required' => TRUE,
+        '#prefix' => '<div class="first-name"><span title="This field is required." class="form-required">*</span>',
+        '#suffix' => '</div>'
+    );
+    $form['contractor']['middle-name'] = array(
+        '#title' => t('Legal MI'),
+        '#type' => 'textfield',
+        '#required' => FALSE,
+        '#maxlength' => 1,
+        '#prefix' => '<div class="mi">',
+        '#suffix' => '</div>'
+    );
+    $form['contractor']['last-name'] = array(
+        '#title' => t('Legal Last Name'),
+        '#type' => 'textfield',
+        '#required' => TRUE,
+        '#prefix' => '<div class="last-name"><span title="This field is required." class="form-required">*</span>',
+        '#suffix' => '</div>'
+    );
+    $form['contractor']['preferred-name'] = array(
+        '#title' => t('Preferred Name'),
+        '#type' => 'textfield',
+        '#prefix' => '<div class="mi">',
+        '#suffix' => '</div>'
+    );
+    $form['contractor']['position'] = array(
+        '#title' => t('Position'),
+        '#type' => 'textfield',
+        '#required' => TRUE,
+        '#prefix' => '<div class="position"><span title="This field is required." class="form-required">*</span>',
+        '#suffix' => '</div>'
+    );
+    $form['contractor']['company'] = array(
+        '#title' => t('Company'),
+        '#type' => 'select',
+      '#prefix' => '<div class="company"><span title="This field is required." class="form-required">*</span>',
+      '#suffix' => '</div>',
+        '#chosen' => TRUE,
+      '#required' => TRUE,
+      '#default_value' => '',
+      '#options' => idm_profile_get_company('Company'),
+    );
+    $form['contractor']['companyother'] = array(
+        '#title' => t('Company Name'),
+        '#type' => 'textfield',
+      '#prefix' => '<div class="companyother" style="display:none;"><span title="This field is required." class="form-required">*</span>',
+      '#suffix' => '</div>',
+      //'#required' => TRUE,
+      '#default_value' => '',
+    );
+    $form['contractor']['email'] = array(
+        '#title' => t('Vendor Email'),
+        '#type' => 'textfield',
+      '#attributes' => array (
+      'class' => array (
+        'required'
+      )
+      ),
+        '#prefix' => '<div class="email"><span title="This field is required." class="form-required">*</span>',
+        '#suffix' => '<label for="edit-email" generated="true" class="error" id="enter_email" style="display:none;">Enter a valid email</label><label for="edit-email" generated="true" class="error_email" style="display:none;">Email id already exists!</label><label style="display:none;" for="edit-email" generated="true" class="success">Available!</label><div class="check_availability_button"><button class="small_button hover-blue" onclick="javascript: return false;">Check Availability</button><div class="ajax_throbber" style="display: none;"><img src="/sites/all/themes/idmtheme/images/ajax-loader.gif"></div></div><div class="check_availability_mobile"><a href="#" onclick="javascript: return false;">Check Availability</a></div></div>'
+    );
+    $form['contractor']['phone'] = array(
+        '#title' => t('Phone'),
+        '#type' => 'textfield',
+        '#required' => FALSE,
+        '#prefix' => '<div class="phone">',
+        '#suffix' => '</div>'
+    );
+    $form['contractor']['building'] = array(
+        '#title' => t('Building'),
+        '#type' => 'textfield',
+        '#required' => FALSE,
+        '#prefix' => '<div class="work-location">',
+        '#suffix' => '</div>'
+    );
+    $form['contractor']['floor'] = array(
+        '#title' => t('Floor'),
+        '#type' => 'textfield',
+        '#required' => FALSE,
+        '#prefix' => '<div class="work-location">',
+        '#suffix' => '</div>'
+    );
+    $form['contractor']['station'] = array(
+        '#title' => t('Work Station'),
+        '#type' => 'textfield',
+        '#required' => FALSE,
+        '#prefix' => '<div class="work-location">',
+        '#suffix' => '</div>'
+    );
+    $form['phone_code'] = array(
+        '#type' => 'hidden',
+        '#attributes' => array('id' => 'phone_code'),
+        '#value' => !empty($phone_code) ? $phone_code : 1
+    );
+    $form['contractor']['submit'] = array (
+      '#type' => 'submit',
+      '#value' => t('Submit'),
+      '#attributes' => array('class' => array('small_button hover-blue')),
+    '#prefix' => '<div class="contractor-submit-buttons" >',
+    );
+    $form['contractor']['submit-add-more'] = array (
+      '#type' => 'submit',
+      '#value' => t('Submit And Add More'),
+      '#attributes' => array('class' => array('small_button hover-blue')),
+    );
+    $form['contractor']['cancel'] = array (
+      '#type' => 'button',
+      '#value' => t('Cancel'),
+      '#attributes' => array('class' => array('small_button hover-grey')),
+      '#suffix' => '</div>',
+    );
+    return $form;
+  }
+}
+
+function idm_create_new_contractor_validate($form, &$form_state) {
+  global $user;
+  date_default_timezone_set(variable_get('default_timezone', DEFAULT_TIME_ZONE));
+  $manager_name = $form_state['values']['name'];
+  $manager_sso = idm_create_new_contractor_manager_solr_validate($manager_name);
+  if(!$manager_sso) {
+    form_set_error('', '<img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">'.t('Please select a manager!!'));
+	//form_set_error('', t('Manager Id does not exist !!!'));
+    return;
+  }
+  $contractor_email = $form_state['values']['email'];
+  if(!empty($contractor_email)) {
+	  $match_email = idm_profile_check_email_id_submit($contractor_email);
+	  if($match_email >= 1) {
+	    form_set_error('', '<img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">'.t('Email id already exists !!!'));
+		//form_set_error('', t('Email id already exists !!!'));
+	    return;
+	  }
+  }
+  $requestor_id = (!empty($user->name) && $user->uid != 1) ? $user->name : DEBUG_MANAGER_ID;
+	$url = variable_get('rest_api_check_url', 'http://3.3.175.127:8080/idm-api/rest');
+	$url .= '/internal/users/create?requestor='.$requestor_id;
+	$account = new stdClass();
+	$account->schemas = array (
+		'urn:scim:schemas:core:1.0'
+	);
+	$account->custom_supplierEmail = $form_state['values']['email'];
+  $account->custom_locationid = !empty($form_state['values']['address_hidden']) ? $form_state['values']['address_hidden'] :  DEFAULT_FUNCTIONAL_LOC_ID;
+	//$account->custom_startdate = date('d-M-Y', idm_portal_strtotime('+1 day'));
+	$account->custom_startdate = date('d-M-Y');
+  $account->custom_enddate = date('d-M-Y', idm_portal_strtotime('+6 months'));
+	$account->jobTitle = $form_state['values']['position'];
+  $account->userType = ucfirst(CONTRACTOR);
+
+  if($form_state['values']['request_check'] == 1){
+    if($form_state['values']['region'] == 1) {
+		$account->custom_mailstore = "%WEST COAST%";
+	}
+	if($form_state['values']['region'] == 0) {
+		$account->custom_mailstore = "%EAST COAST%";
+	}
+    $account->custom_mailtype = "TFAYD";
+  }else{
+    $account->custom_mailtype = "NBCCR";
+  }
+
+	$name = new stdClass();
+	$name->givenName = $form_state['values']['first-name'];
+	$name->familyName = $form_state['values']['last-name'];
+  $name->nickName = $form_state['values']['preferred-name'];
+  $name->middleName = $form_state['values']['middle-name'];
+	$account->name = $name;
+
+	$email = new stdClass();
+	$email->value = $form_state['values']['email'];
+	$email->type = 'work';
+	$account->emails = array($email);
+
+  preg_match('/(.*)[\s]+\(([\d]{3})\)[\s]+([\d]{3})-([\d]{4})/', $form_state['values']['phone'], $phone_details);
+  if(!empty($phone_details)){
+    $phone->type = 'work';
+    $phone->value = $phone_details[0];
+    $phone->custom_bCountry = $phone_details[1];
+    $phone->custom_bAreaCode = $phone_details[2];
+    $phone->custom_bLocalNumber = $phone_details[3].$phone_details[4];
+    $account->phoneNumbers = array($phone);
+  }elseif(!empty($form_state['values']['phone'])){
+	  form_set_error('phone', '<img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">'.t("Invalid phone number"));
+	  //form_set_error('phone', t("Invalid phone number"));
+	  return;
+  }
+
+  $address = new stdClass();
+  $address->type = 'work';
+  $address->custom_building = $form_state['values']['building'];
+  $address->custom_floor = $form_state['values']['floor'];
+  $address->custom_office = $form_state['values']['station'];
+  $account->custom_preferredName = $form_state['values']['preferred-name'];
+  $account->addresses = array($address);
+
+	$manager = new stdClass();
+  $manager->managerId = $manager_sso;
+//  preg_match('/[\w\s]+\(([\d]+)\)*/', $form_state['values']['name'], $sso);
+//	$manager->managerId = isset($sso[1]) ? $sso[1] : $manager_sso;
+//	$manager->managerId = DEBUG ? DEBUG_MANAGER_ID : $form_state['values']['name'];
+	$account->manager = $manager;
+	if($form_state['values']['company'] == 'Other') {
+	   $account->custom_company = $form_state['values']['companyother'];
+	} else {
+	   $account->custom_company = $form_state['values']['company'];
+	}
+	$user_json = json_encode($account);
+	$method = 'POST';
+	$result = idm_profile_execute_curl($url, $user_json, $method);
+    $result_obj = json_decode($result);
+	//$info = curl_getinfo($ch);
+
+	// returning result
+  if(isset($result_obj->custom_transactionId)){
+    ctools_object_cache_clear('api', 'mystaff');
+    list(, $user_sso) = explode("=", $result_obj->custom_InfoMessage);
+    if ($requestor_id == $manager->managerId) {
+      $success_message = "Request has been submitted. You will receive an email with the login information for the new SSO. Please allow up to 60 minutes for the data to flow to downstream applications.";
+    } else {
+      $success_message = "Request has been submitted and is pending with the selected manager's approval. Once the request is approved by the selected manager, you will receive an email with the login information for the new SSO.";
+      idm_notifications_clear_user_cache($manager->managerId);
+    }
+    //drupal_set_message($success_message);
+	drupal_set_message(filter_xss('<img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">'.$success_message, $allowed_tags = array('img')));
+    if ($form_state['values']['op'] == "Submit And Add More") {
+      drupal_goto('create/contractor');
+    } else if ($form_state['values']['op'] == "Submit") {
+      drupal_goto('myworkers',array(
+        'query' => array(
+          'userType' => 'contractor',
+        ),
+      ));
+    }
+  }elseif(!PROD){
+	form_set_error('', '<img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">'.t('Error occurred during new Contractor creation request. Please contact the <a href="mailto:'.variable_get('idm_contact_emailid','identityservicessupportIDM@nbcuni.com').'">IdM Support Team</a> for assistance.'));
+	//IP-1134
+  //drupal_set_message(filter_xss('<img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">'.'DEBUG Info<br>URL<pre>' . print_r($url, TRUE) . '</pre>'.'<br />USER JSON<pre>' . print_r($user_json, TRUE) . '</pre>'.'<br />RESULT<pre>' . print_r($result, TRUE) . '</pre>', $allowed_tags = array('img')));
+	//form_set_error('', t('Error occurred during new Contractor creation request. Please contact the <a href="mailto:identityservicessupportIDM@nbcuni.com">IdM Support Team</a> for assistance.'));
+	//drupal_set_message('DEBUG Info<br>URL<pre>' . print_r($url, TRUE) . '</pre>');
+	//drupal_set_message('USER JSON<pre>' . print_r($user_json, TRUE) . '</pre>');
+	//drupal_set_message('RESULT<pre>' . print_r($result, TRUE) . '</pre>');
+  }
+}
+
+function idm_create_new_contractor_manager_solr_validate($manager_name) {
+  preg_match('/[\w\s]+\(([\d]+)\)*/', $manager_name, $sso);
+  $manager_sso = isset($sso[1]) ? $sso[1] : FALSE;
+  return $manager_sso;
+  /*
+  $solr_base = variable_get('emp_dir_solr','http://dev.idmportal.inbcu.com:8080/solr/collection1');
+  $url = $solr_base.'/select?q="'.urlencode($manager_name).'"%20AND%20category:worker%20AND%20usertype:employee&wt=json&indent=true';
+  $response_obj = drupal_http_request($url);
+  $response = $response_obj->data;
+  $docs = json_decode($response)->response->docs;
+  if(!empty($docs)){
+    return $docs[0]->id;
+  }
+  return FALSE;
+  */
+}
+
+function idm_create_new_functional_app_id_validate($app_id) {
+  preg_match('/(.*)[\s]+([\d]+)/', $app_id, $matches);
+  if(empty($matches[2])){
+    return false;
+  }
+  $sub_query = db_select('taxonomy_vocabulary', 'voc')
+                 ->fields('voc', array('vid'))
+                 ->condition('name','Application', '=');
+      $query = db_select('taxonomy_term_data', 'term');
+      $query -> leftJoin('field_data_field_application_id', 'aid', 'term.tid = aid.entity_id');
+      $result = $query->fields('term', array('tid','name'))
+                  ->fields('aid', array('field_application_id_value'))
+                  ->condition('term.vid',$sub_query, 'IN')
+                  ->condition('aid.field_application_id_value', $matches[2], '=')
+                  ->range(0, 10)
+                  ->execute()
+                  ->fetchAll();
+
+  return !empty($result) ? true : false;
+}
+
+function idm_create_new_functional_account($form, &$form_state) {
+  if (isset($_SESSION['legacy'])) {
+    $external_url = variable_get('idm_waveset_create_functional_url','https://sso.stg.inbcu.com/nbcucentral/app/pwchange.jsp');
+    drupal_goto($external_url, array('external' => TRUE));
+  } else {
+    global $user;
+    $profile_id = $user->name;
+    $info = _idm_profile_get_user($profile_id);
+    //Manage name calculation
+    $manager_name = '';
+    $user_type = '';
+    $info['usertype'] = isset($info['usertype']) ? $info['usertype'] : '';
+    $user_type = $info['usertype'];
+    if ($user_type == 'employee') {
+      $manager_name = $info['displayname'].' ('.$info['sso'].')';
+    } elseif ($user_type == 'contractor') {
+      $manager_name = $info['managerfullname'].' ('.$info['managerid'].')';
+    }
+
+    $path = drupal_get_path('theme', 'idmtheme');
+    drupal_add_js($path . '/js/jquery.maskedinput.min.js');
+    drupal_add_js(drupal_get_path('module', 'idm_profile').'/js/script.js');
+    $form['mgr'] =  array(
+      '#type' => 'fieldset',
+      '#attributes' => array (
+      'class' => array (
+        'mgr-info'
+      )
+      ),
+    );
+    $form['mgr']['title'] = array(
+        '#markup' => 'Create New Functional Accounts',
+        '#prefix' => '<div class="title"><h2>',
+        '#suffix' => '</h2></div>'
+    );
+    $form['mgr']['name'] = array(
+        '#title' => t('Manager'),
+        '#type' => 'textfield',
+        '#required' => TRUE,
+        '#autocomplete_path' => 'autocomplete/mgr',
+        '#prefix' => '<div class="name"><span title="This field is required." class="form-required">*</span>',
+        '#suffix' => '<label for="edit-name" generated="true" class="error" style="display: none;">Please select a manager</label><div class="icon-search_icon"></div><button class="small_button hover-blue" onclick="javascript: return false;">Search</button></div>',
+        '#default_value' => $manager_name
+    );
+    if(isset($manager_name)) {
+      $form['mgr']['nam_hidden'] = array(
+          '#type' => 'hidden',
+          '#default_value' => 'mgrselected',
+          '#attributes' => array (
+            'id' => 'nam_id'
+          ),
+      );
+    } else {
+      $form['mgr']['nam_hidden'] = array(
+          '#type' => 'hidden',
+          '#default_value' => 'not mgrselected',
+          '#attributes' => array (
+            'id' => 'nam_id'
+          ),
+      );
+    }
+    $form['functional'] =  array(
+      '#type' => 'fieldset',
+      '#attributes' => array (
+      'class' => array (
+        'contractor-info'
+      )
+      ),
+    );
+     $form['functional']['application_id'] = array(
+        '#title' => t('Application ID'),
+        '#type' => 'textfield',
+        '#required' => TRUE,
+        '#autocomplete_path' => 'autocomplete/application',
+        '#prefix' => '<div class="preferred-name"><span title="This field is required." class="form-required">*</span>',
+        '#suffix' => '<label for="edit-application-id" generated="true" class="error" style="display: none;">Please choose an application ID</label></div>'
+    );
+    $form['functional']['appid_hidden'] = array(
+        '#type' => 'hidden',
+        '#default_value' => 'mgrselected',
+        '#attributes' => array (
+          'id' => 'appid_id'
+        ),
+    );
+    $form['functional']['application_name'] = array(
+        '#title' => t('Application Name'),
+        '#type' => 'textfield',
+        '#required' => TRUE,
+        '#prefix' => '<div class="preferred-name"><span title="This field is required." class="form-required">*</span>',
+        '#suffix' => '</div>'
+    );
+    /*
+    $form['functional']['first_name'] = array(
+        '#title' => t('First Name'),
+        '#type' => 'textfield',
+        '#required' => TRUE,
+        '#prefix' => '<div class="first-name"><span title="This field is required." class="form-required">*</span>',
+        '#suffix' => '</div>'
+    );
+    $form['functional']['middle_name'] = array(
+        '#title' => t('MI'),
+        '#type' => 'textfield',
+        '#required' => FALSE,
+        '#prefix' => '<div class="mi">',
+        '#suffix' => '</div>'
+    );
+    $form['functional']['last_name'] = array(
+        '#title' => t('Last Name'),
+        '#type' => 'textfield',
+        '#required' => TRUE,
+        '#prefix' => '<div class="last-name"><span title="This field is required." class="form-required">*</span>',
+        '#suffix' => '</div>'
+    );
+    */
+    $form['functional']['phone'] = array(
+        '#title' => t('Phone'),
+        '#type' => 'textfield',
+        '#required' => FALSE,
+        '#prefix' => '<div class="phone">',
+        '#suffix' => '</div>'
+    );
+
+    $form['functional']['submit'] = array (
+      '#type' => 'submit',
+      '#value' => t('Submit'),
+      '#attributes' => array('class' => array('small_button hover-blue')),
+    '#prefix' => '<div class="contractor-submit-buttons" >',
+    );
+    $form['functional']['submit-add-more'] = array (
+      '#type' => 'submit',
+      '#value' => t('Submit And Add More'),
+      '#attributes' => array('class' => array('small_button hover-blue')),
+    );
+    $form['functional']['cancel'] = array (
+      '#type' => 'button',
+      '#value' => t('Cancel'),
+      '#attributes' => array('class' => array('small_button hover-grey')),
+      '#suffix' => '</div>',
+    );
+    return $form;
+  }
+}
+
+function idm_create_new_functional_account_validate($form, &$form_state) {
+  global $user;
+  date_default_timezone_set(variable_get('default_timezone', DEFAULT_TIME_ZONE));
+  $manager_name = $form_state['values']['name'];
+  $manager_sso = idm_create_new_contractor_manager_solr_validate($manager_name);
+  if(!$manager_sso) {
+    form_set_error('', '<img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">'.t('Please select a manager!!'));
+	//form_set_error('', t('Manager Id does not exist !!!'));
+    return;
+  }
+  $app_id = $form_state['values']['application_id'];
+  $app_match = idm_create_new_functional_app_id_validate($app_id);
+  if(!$app_match) {
+    form_set_error('', '<img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">'.t('Application ID does not exist !!!'));
+	//form_set_error('', t('Application ID does not exist !!!'));
+    return;
+  }
+  $requestor_id = (!empty($user->name) && $user->uid != 1) ? $user->name : DEBUG_MANAGER_ID;
+	$url = variable_get('rest_api_check_url', 'http://3.3.175.127:8080/idm-api/rest');
+	$url .= '/internal/users/create?requestor='.$requestor_id;
+	$account = new stdClass();
+	$account->schemas = array (
+		'urn:scim:schemas:core:1.0'
+	);
+	//$user->custom_locationid = $form_state['values']['work-location'];
+  $account->custom_locationid = DEFAULT_FUNCTIONAL_LOC_ID;
+	$account->custom_startdate = date('d-M-Y');
+  $account->userType = ucfirst(FUNCTIONAL);
+
+  /*
+  $email = new stdClass();
+	$email->value = $form_state['values']['email'];
+	$email->type = 'work';
+	$user->emails = array($email);
+  */
+
+  //Since the service uses US phone number validation for the default FA location id, sending a US number to service
+  preg_match('/\(([\d]{3})\)[\s]+([\d]{3})-([\d]{4})/', $form_state['values']['phone'], $phone_details);
+  if(!empty($phone_details)){
+    $phone = new stdClass();
+    $phone->type = 'work';
+    $phone->value = DEFAULT_ISD_CODE." ".$phone_details[0];
+    $phone->custom_bCountry = DEFAULT_ISD_CODE;
+    $phone->custom_bAreaCode = $phone_details[1];
+    $phone->custom_bLocalNumber = $phone_details[2].$phone_details[3];
+    $account->phoneNumbers = array($phone);
+  }
+
+  $manager = new stdClass();
+  preg_match('/[\w\s]+\(([\d]+)\)*/', $form_state['values']['name'], $sso);
+	$manager->managerId = isset($sso[1]) ? $sso[1] : $manager_sso;
+	$account->manager = $manager;
+
+  preg_match('/(.*)[\s]+([\d]+)/', $form_state['values']['application_id'], $application_data);
+
+  $name = new stdClass();
+  //$name->givenName = $form_state['values']['first_name'];
+  //$name->familyName = $form_state['values']['last_name'];
+  //$name->middleName = $form_state['values']['middle_name'];
+  $name->givenName = $form_state['values']['application_name'];
+  $name->familyName = $application_data[2];
+  $account->name = $name;
+
+  $account->custom_amsApplicationId = $application_data[2];
+  $account->custom_amsApplicationName = $form_state['values']['application_name'];
+
+	$user_json = json_encode($account);
+	$method = 'POST';
+	$result = idm_profile_execute_curl($url, $user_json, $method);
+  $result_obj = json_decode($result);
+	//$info = curl_getinfo($ch);
+
+	// returning result
+  if(isset($result_obj->custom_transactionId)){
+    list(, $user_sso) = explode("=", $result_obj->custom_InfoMessage);
+    if ($requestor_id == $manager->managerId) {
+      $success_message = "Request has been submitted. You will receive an email with the login information for the new SSO. Please allow up to 60 minutes for the data to flow to downstream applications.";
+    } else {
+      $success_message = "Request has been submitted and is pending with the selected manager's approval. Once the request is approved by the selected manager, you will receive an email with the login information for the new SSO.";
+    }
+    //drupal_set_message($success_message);
+	drupal_set_message(filter_xss('<img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">'.$success_message, $allowed_tags = array('img')));
+    if ($form_state['values']['op'] == "Submit And Add More") {
+      drupal_goto('create/functional');
+    } else if ($form_state['values']['op'] == "Submit") {
+      drupal_goto('myworkers',array(
+        'query' => array(
+          'userType' => 'functional',
+        ),
+      ));
+    }
+  }else{
+	  form_set_error('', '<img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">'.t('Error occurred during new Functional Account creation request. Please contact the <a href="mailto:'.variable_get('idm_contact_emailid','identityservicessupportIDM@nbcuni.com').'">IdM Support Team</a> for assistance.'));
+    //IP-1134
+    //drupal_set_message(filter_xss('<img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">'.'DEBUG Info<br>URL<pre>' . print_r($url, TRUE) . '</pre>'.'<br />USER JSON<pre>' . print_r($user_json, TRUE) . '</pre>'.'<br />RESULT<pre>' . print_r($result, TRUE) . '</pre>', $allowed_tags = array('img')));
+    //form_set_error('', t('Error occurred during new Functional Account creation request. Please contact the <a href="mailto:identityservicessupportIDM@nbcuni.com">IdM Support Team</a> for assistance.'));
+    //drupal_set_message('DEBUG Info<br>URL<pre>' . print_r($url, TRUE) . '</pre>');
+    //drupal_set_message('USER JSON<pre>' . print_r($user_json, TRUE) . '</pre>');
+    //drupal_set_message('RESULT<pre>' . print_r($result, TRUE) . '</pre>');
+  }
+}
+
+function idm_profile_get_manager_lookup_field($userid, $element_id = 'edit-transfer', $path = 'autocomplete/manager' ){
+    $variables['element']['#type'] = 'textfield';
+    $variables['element']['#autocomplete_path'] = $path;
+    $variables['element']['#attributes']['id'] = $element_id;
+    $variables['element']['#attributes']['userid'] = $userid;
+    $variables['element']['#size'] = 60;
+    $variables['element']['#theme'] = 'textfield';
+    return theme_textfield($variables);
+}
+function idm_profile_get_global_search_field($userid){
+    $variables['element']['#type'] = 'textfield';
+    $variables['element']['#autocomplete_path'] = 'autocomplete/globalsearch';
+    $variables['element']['#attributes']['id'] = 'global-search';
+    $variables['element']['#attributes']['userid'] = $userid;
+    $variables['element']['#size'] = 160;
+    $variables['element']['#theme'] = 'textfield';
+    $variables['element']['#value'] = t('search');
+    return theme_textfield($variables);
+}
+function idm_profile_execute_curl($url, $user_json = '', $method = 'GET') {
+	$userid = variable_get('rest_api_check_http_auth_username', '999999001');
+    $pass = variable_get('rest_api_check_http_auth_pass', 'test123test');
+
+	// open connection
+	$ch = curl_init();
+	curl_setopt($ch, CURLOPT_URL, $url);
+	curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+	curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+	curl_setopt($ch, CURLOPT_USERPWD, $userid . ":" . $pass);
+	curl_setopt($ch, CURLOPT_UNRESTRICTED_AUTH, TRUE);
+	curl_setopt($ch, CURLOPT_HTTPHEADER, array (
+		"Content-Type: application/json;"
+	));
+  curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+  curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+  if($method != 'GET'){
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $user_json);
+  }
+	//curl_setopt($ch, CURLOPT_HEADER, 1);
+  if(LOCAL_DEV || variable_get('no_proxy', 1)){
+    curl_setopt($ch, CURLOPT_PROXY, "");
+  }
+  curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, variable_get('api_connection_timeout', 15));
+  curl_setopt($ch, CURLOPT_TIMEOUT, variable_get('api_call_timeout',180));
+	// execute post
+$starttime = microtime(true);
+	$result = curl_exec($ch);
+$endtime = microtime(true);
+$elapsed = sprintf("%.6f", $endtime - $starttime);
+//watchdog("iam_api_call", "took $elapsed seconds to $method $url");
+ watchdog("idm_api_call", "$elapsed seconds to Call %url with data %data and has recieved the response %response", array('%url' => $url, '%data' => $user_json, '%response' => $result ));
+	return $result;
+}
+/**
+ * Common function to format the display name for the user
+ * @param type $data
+ * @return string
+ */
+ function idm_profile_format_display_name($data,$username_flag){
+   $userinfo = array('displayname' => "");
+   if ($username_flag == false) {
+     if(!empty($data->name)){
+       if(!empty($data->custom_preferredName)){
+         $userinfo['firstname'] = $data->custom_preferredName;
+         $displayName = $userinfo['firstname'].' ';
+       }
+       elseif(!empty($data->name->givenName)){
+         $userinfo['firstname'] = $data->name->givenName;
+         $displayName = $userinfo['firstname'].' ';
+       }
+
+       if(!empty($data->name->middleName)){
+         $userinfo['middlename'] = $data->name->middleName;
+         $displayName .= $userinfo['middlename'].' ';
+       }
+       if(!empty($data->name->familyName)){
+         $userinfo['lastname'] = $data->name->familyName;
+         $displayName .= $userinfo['lastname'];
+       }
+     }
+     if (!empty($displayName)) {
+       $userinfo['displayname'] = $displayName;
+     }
+   } else {
+     if(!empty($data->name)){
+       if(!empty($data->name->familyName)){
+         $userinfo['lastname'] = $data->name->familyName;
+         $displayName = $userinfo['lastname'].', ';
+       }
+       if(!empty($data->name->givenName)){
+         $userinfo['firstname'] = $data->name->givenName;
+         $displayName .= $userinfo['firstname'];
+       }
+       if(!empty($data->name->formatted)){
+         $userinfo['formatted'] = $data->name->formatted;
+         $displayName = $userinfo['formatted'];
+       }
+       if(!empty($data->displayName)){
+         $userinfo['displayname'] = $data->displayName;
+       }else{
+         $userinfo['displayname'] = $displayName;
+       }
+     }
+   }
+   return isset($userinfo['displayname']) ? ucwords($userinfo['displayname']) : '';
+ }
+
+function idm_profile_transfer_employee_all($useridall='' , $managerid='') {
+  global $user;
+  $requestorid = empty($user->name) ? '' : $user->name;
+  $url = variable_get('rest_api_check_url', 'http://3.3.175.127:8080/idm-api/rest');
+  $url .= '/internal/users/bulkOp?requestor='.urlencode($requestorid);
+  $account = new stdClass();
+  $account->schemas = array (
+  'urn:scim:schemas:core:1.0'
+  );
+  $account->resources = array();
+  $each_resource = array();
+  $var = array();
+  $i = 0;
+  $useridallArray = array();
+  $useridallArray = explode(",",$useridall);
+  foreach($useridallArray as $userid){
+    $user_info = _idm_profile_get_user($userid);
+    $each_resource['id'] = $userid ;
+    $each_resource['userName'] = $userid ;
+    $each_resource['manager']['managerId'] = $managerid;
+    $var[$i] = $each_resource;
+    $i++;
+  }
+  $account->resources = $var;
+  $user_json = json_encode($account);
+  $method = 'PUT';
+  $result = idm_profile_execute_curl($url, $user_json, $method);
+  $result_json = json_decode($result);
+  $each_failure_status = array();
+  $each_success_status = array();
+  $j = 0;
+  for($j=0;$j<$i;$j++) {
+    if(!empty($result_json->results[$j]->errorMessage)) {
+//    $each_failure_status[$j] = $result_json->results[$j]->errorMessage.' '.$result_json->results[$j]->id;
+    $each_failure_status[$j] = 'Request failed for the worker '.$result_json->results[$j]->id;
+    }
+    if($result_json->results[$j]->op_status == SUCCESS) {
+    $each_success_status[$j] = $result_json->results[$j]->op_status.' '.$result_json->results[$j]->id;
+    }
+  }
+  $each_failure_status_msg = implode('<br>',$each_failure_status);
+  $each_success_status_msg = implode('<br>',$each_success_status);
+  print $each_failure_status_msg.'<br>'.$each_success_status_msg;
+}
+
+function idm_profile_transfer_employee($userid='', $managerid='') {
+  $user_info = _idm_profile_get_user($userid);
+  $requestor = $user_info['managerid'];
+  $initial_managername = $user_info['managername'];
+  $url = variable_get('rest_api_check_url', 'http://3.3.175.127:8080/idm-api/rest');
+  $url .= '/internal/users/'.$userid.'?requestor='.urlencode($requestor);
+  $user = new stdClass();
+  $user->schemas = array (
+    'urn:scim:schemas:core:1.0'
+  );
+  $user->id = $userid ;
+  $manager = new stdClass();
+  $manager->managerId = !empty($managerid) ? $managerid : DEFAULT_MANAGER_ID;
+  $user->manager = $manager;
+  $user_json = json_encode($user);
+  $method = 'PUT';
+  $result = idm_profile_execute_curl($url, $user_json, $method);
+  $result_json = json_decode($result);
+  $output = '';
+  $redirect_url = '';
+  if($result_json->op_status == SUCCESS){
+    cache_clear_all('*', 'cache', TRUE);
+    $emp_name = $user_info['displayname'];
+    //drupal_set_message('Request has been submitted. Please allow up to 60 minutes for the data to flow to downstream applications.');
+	  drupal_set_message('<img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">'.'Request has been submitted. Please allow up to 60 minutes for the data to flow to downstream applications.');
+    $redirect_url = '/employeeslist';
+    print $redirect_url;
+  }else{
+    $output .= '<div class="error_request-msg"><img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">Error occurred while transferring Contractor. Please contact the <a href="mailto:'.variable_get('idm_contact_emailid','identityservicessupportIDM@nbcuni.com').'">IdM Support Team</a> for assistance.</div>';
+    //$output .= '<div class="error_request-msg"><img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">Error occurred while transferring Contractor. Please contact the <a href="mailto:identityservicessupportIDM@nbcuni.com">IdM Support Team</a> for assistance.<br>DEBUG Info<br>URL - '.$url.'<br>Input'.$user_json."<br>Result".$result_json->errorMessage.'</div>';
+    print $output;
+  }
+}
+
+function idm_profile_renew_employee_all($useridall='' , $duration='') {
+  global $user;
+  date_default_timezone_set(variable_get('default_timezone', DEFAULT_TIME_ZONE));
+  $requestorid = empty($user->name) ? '' : $user->name;
+  $url = variable_get('rest_api_check_url', 'http://3.3.175.127:8080/idm-api/rest');
+  $url .= '/internal/users/bulkOp?requestor='.urlencode($requestorid);
+  $account = new stdClass();
+  $account->schemas = array (
+  'urn:scim:schemas:core:1.0'
+  );
+  $account->resources = array();
+  $each_resource = array();
+  $var = array();
+  $i = 0;
+  $useridallArray = array();
+  $useridallArray = explode(",",$useridall);
+  foreach($useridallArray as $userid){
+    $user_info = _idm_profile_get_user($userid);
+    $initial_end_date = strtotime($user_info['enddate']);
+    $initial_date = date("d-M-Y", strtotime($user_info['enddate']));
+    $end_date = date("d-M-Y", idm_portal_strtotime("+".$duration." month"));
+    $requestor = $user_info['managerid'];
+    $each_resource['id'] = $userid ;
+    $each_resource['userName'] = $userid ;
+    $each_resource['custom_initialEndDate'] = $initial_date;
+    $each_resource['custom_enddate'] = $end_date;
+    $var[$i] = $each_resource;
+    $i++;
+  }
+  $account->resources = $var;
+  $user_json = json_encode($account);
+  $method = 'PUT';
+  $result = idm_profile_execute_curl($url, $user_json, $method);
+  $result_json = json_decode($result);
+  $each_failure_status = array();
+  $each_success_status = array();
+  $j = 0;
+  for($j=0;$j<$i;$j++) {
+    if(!empty($result_json->results[$j]->errorMessage)) {
+	$each_failure_status[$j] = $result_json->results[$j]->errorMessage.' '.$result_json->results[$j]->id;
+    }
+    if($result_json->results[$j]->op_status == SUCCESS) {
+    //watchdog("idm_api_call", "Clearing the data for the user %user", array('%user' => $result_json->results[$j]->id ));
+    ctools_object_cache_clear('api', 'profile_data'.trim($result_json->results[$j]->id));
+    $each_success_status[$j] = $result_json->results[$j]->op_status.' '.$result_json->results[$j]->id;
+    }
+  }
+  $each_failure_status_msg = implode('<br>',$each_failure_status);
+  $each_success_status_msg = implode('<br>',$each_success_status);
+  print $each_failure_status_msg.'<br>'.$each_success_status_msg;
+  ctools_object_cache_clear('api', 'renew_count');
+  ctools_object_cache_clear('api', 'renew_request');
+  ctools_object_cache_clear('api', 'mystaff');
+}
+
+function idm_profile_renew_employee($userid='' , $duration='') {
+  date_default_timezone_set(variable_get('default_timezone', DEFAULT_TIME_ZONE));
+  $user_info = _idm_profile_get_user($userid);
+  $initial_end_date = strtotime($user_info['enddate']);
+  $initial_date = date("d-M-Y", strtotime($user_info['enddate']));
+  $end_date = date("d-M-Y", idm_portal_strtotime("+".$duration." month"));
+  $requestor = $user_info['managerid'];
+  $url = variable_get('rest_api_check_url', 'http://3.3.175.127:8080/idm-api/rest');
+  $url .= '/internal/users/'.$userid.'?requestor='.urlencode($requestor);
+  $user = new stdClass();
+  $user->schemas = array (
+    'urn:scim:schemas:core:1.0'
+  );
+  $user->id = $userid ;
+  $user->custom_initialEndDate = $initial_date ;
+  $user->custom_enddate = $end_date ;
+  $user_json = json_encode($user);
+  /*if(strtotime($end_date) < strtotime($initial_date)) {
+    $error_text .= '<div class="error_request-msg"><img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">Selected end date is less the Contractor\'s end date. Are you sure you want to reduce the end date of the Contractor.</div>';
+    print $error_text;
+    return;
+  }*/
+  $method = 'PUT';
+  $result = idm_profile_execute_curl($url, $user_json, $method);
+  $result_json = json_decode($result);
+  $output = '';
+  $redirect_url = '';
+ // cache_clear_all('*', 'cache', TRUE);
+  if($result_json->op_status == SUCCESS) {
+    print 'success';
+    ctools_object_cache_clear('api', 'profile_data'.$userid);
+    ctools_object_cache_clear('api', 'renew_count');
+    ctools_object_cache_clear('api', 'renew_request');
+    ctools_object_cache_clear('api', 'mystaff');
+  } else {
+    $output .= '<div class="error_request-msg"><img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">Error occurred during renewing Contractor Account. Please contact the <a href="mailto:'.variable_get('idm_contact_emailid','identityservicessupportIDM@nbcuni.com').'">IdM Support Team</a> for assistance.</div>';
+    //$output .= '<div class="error_request-msg"><img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">Error occurred during renewing Contractor Account. Please contact the <a href="mailto:identityservicessupportIDM@nbcuni.com">IdM Support Team</a> for assistance.<br> DEBUG Info<br>'.$result_json->errorMessage.'</div>';
+    print $output;
+  }
+}
+
+function idm_profile_terminate_employee_all($useridall='') {
+  $useridallArray = array();
+  $useridallArray = explode(",",$useridall);
+  $j = 0;
+  $each_failure_status = array();
+  $each_success_status = array();
+  foreach($useridallArray as $userid){
+	$user_info = _idm_profile_get_user($userid);
+	$requestor = $user_info['managerid'];
+	$url = variable_get('rest_api_check_url', 'http://3.3.175.127:8080/idm-api/rest');
+	$url .= '/internal/users/'.$userid.'?requestor='.urlencode($requestor);
+	$user = new stdClass();
+	$user->schemas = array (
+	  'urn:scim:schemas:core:1.0'
+	);
+	$user_json = json_encode($user);
+	$method = "DELETE";
+	$result = idm_profile_execute_curl($url, $user_json, $method);
+	$result_json = json_decode($result);
+	//echo '<pre>';
+	//print_r($result);
+    if(!empty($result_json->errorMessage)) {
+		$each_failure_status[$j] = $result_json->errorMessage.' '.$result_json->id;
+    }
+    if($result_json->op_status == SUCCESS) {
+		$each_success_status[$j] = $result_json->op_status.' '.$result_json->id;
+    }
+    $j++;
+  }
+  $each_failure_status_msg = implode('<br>',$each_failure_status);
+  $each_success_status_msg = implode('<br>',$each_success_status);
+  print $each_failure_status_msg.'<br>'.$each_success_status_msg;
+}
+
+/*function idm_profile_terminate_employee_all($useridall='') {
+  $useridallArray = array();
+  $useridallArray = explode(",",$useridall);
+  foreach($useridallArray as $userid){
+    idm_profile_terminate_employee($userid, $optype='bulk');
+  }
+  print 'Processig done.';
+}*/
+
+function idm_profile_terminate_employee($userid='', $optype='') {
+  $user_info = _idm_profile_get_user($userid);
+  $requestor = $user_info['managerid'];
+  $url = variable_get('rest_api_check_url', 'http://3.3.175.127:8080/idm-api/rest');
+  $url .= '/internal/users/'.$userid.'?requestor='.urlencode($requestor);
+  $user = new stdClass();
+  $user->schemas = array (
+    'urn:scim:schemas:core:1.0'
+  );
+  $user_json = json_encode($user);
+  $method = "DELETE";
+  $result = idm_profile_execute_curl($url, $user_json, $method);
+  $result_json = json_decode($result);
+  $output = '';
+  $redirect_url = '';
+  cache_clear_all('*', 'cache', TRUE);
+  if ($optype != 'bulk') {
+    if($result_json->op_status == SUCCESS){
+      //drupal_set_message('Request has been submitted. Please allow up to 60 minutes for the data to flow to downstream applications.');
+	    drupal_set_message('<img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">'.'Request has been submitted. Please allow up to 60 minutes for the data to flow to downstream applications.');
+      $redirect_url = '/employeeslist';
+      print $redirect_url;
+    }else{
+      $output .= '<div class="error_request-msg"><img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">Error occurred while terminating Contractor Account. Please contact the <a href="mailto:'.variable_get('idm_contact_emailid','identityservicessupportIDM@nbcuni.com').'">IdM Support Team</a> for assistance.</div>';
+      //$output .= '<div class="error_request-msg"><img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">Error occurred while terminating Contractor Account. Please contact the <a href="mailto:identityservicessupportIDM@nbcuni.com">IdM Support Team</a> for assistance.<br> DEBUG Info<br>'.$result_json->errorMessage.'</div>';
+      $redirect_url = '';
+      print $output;
+    }
+  }
+}
+
+function idm_profile_revoke_employee_all($useridall='') {
+  $useridallArray = array();
+  $useridallArray = explode(",",$useridall);
+  $j = 0;
+  $each_failure_status = array();
+  $each_success_status = array();
+  foreach($useridallArray as $userid){
+	$user_info = _idm_profile_get_user($userid);
+	$requestor = $user_info['managerid'];
+	$url = variable_get('rest_api_check_url', 'http://3.3.175.127:8080/idm-api/rest');
+	$url .= '/internal/users/'.$userid.'?requestor='.urlencode($requestor);
+	$user = new stdClass();
+	$user->schemas = array (
+	  'urn:scim:schemas:core:1.0'
+	);
+    $user->custom_moduleName = "Revoke Sponsor";
+	$user_json = json_encode($user);
+	$method = "PUT";
+	$result = idm_profile_execute_curl($url, $user_json, $method);
+	$result_json = json_decode($result);
+	//echo '<pre>';
+	//print_r($result);
+    if(!empty($result_json->errorMessage)) {
+		$each_failure_status[$j] = $result_json->errorMessage.' '.$result_json->id;
+    }
+    if($result_json->op_status == SUCCESS) {
+		$each_success_status[$j] = $result_json->op_status.' '.$result_json->id;
+    }
+    $j++;
+  }
+  $each_failure_status_msg = implode('<br>',$each_failure_status);
+  $each_success_status_msg = implode('<br>',$each_success_status);
+  print $each_failure_status_msg.'<br>'.$each_success_status_msg;
+}
+
+function idm_profile_revoke_employee($userid='', $optype='') {
+  $user_info = _idm_profile_get_user($userid);
+  $requestor = $user_info['managerid'];
+  $url = variable_get('rest_api_check_url', 'http://3.3.175.127:8080/idm-api/rest');
+  $url .= '/internal/users/'.$userid.'?requestor='.urlencode($requestor);
+  $user = new stdClass();
+  $user->schemas = array (
+    'urn:scim:schemas:core:1.0'
+  );
+  $user->custom_moduleName = "Revoke Sponsor";
+  $user_json = json_encode($user);
+  $method = "PUT";
+  $result = idm_profile_execute_curl($url, $user_json, $method);
+  $result_json = json_decode($result);
+  $output = '';
+  $redirect_url = '';
+  cache_clear_all('*', 'cache', TRUE);
+  if ($optype != 'bulk') {
+    if($result_json->op_status == SUCCESS){
+      //drupal_set_message('Request has been submitted. Please allow up to 60 minutes for the data to flow to downstream applications.');
+	    drupal_set_message('<img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">'.'Request has been submitted. Please allow up to 60 minutes for the data to flow to downstream applications.');
+      $redirect_url = '/employeeslist';
+      print $redirect_url;
+    }else{
+      $output .= '<div class="error_request-msg"><img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">Error occurred while revoking Contractor Account. Please contact the <a href="mailto:'.variable_get('idm_contact_emailid','identityservicessupportIDM@nbcuni.com').'">IdM Support Team</a> for assistance.</div>';
+      //$output .= '<div class="error_request-msg"><img width="20" src="/sites/all/themes/idmtheme/images/close_red.png">Error occurred while revoking Contractor Account. Please contact the <a href="mailto:identityservicessupportIDM@nbcuni.com">IdM Support Team</a> for assistance.<br> DEBUG Info<br>'.$result_json->errorMessage.'</div>';
+      $redirect_url = '';
+      print $output;
+    }
+  }
+}
+
+function idm_profile_mobile_renew_employee($userid='') {
+  drupal_add_js(drupal_get_path('module', 'idm_profile').'/js/script.js');
+  global $user;
+  if (empty($userid)) {
+    $userid = empty($user->name) ? '' : $user->name;
+  }
+  $info = _idm_profile_get_user($userid);
+  $var['info'] = $info;
+  return theme('renew_mobile', $var);
+}
+function idm_profile_mobile_terminate_employee($userid='') {
+	drupal_add_js(drupal_get_path('module', 'idm_profile').'/js/script.js');
+	global $user;
+	if (empty($userid)) {
+		$userid = empty($user->name) ? '' : $user->name;
+	}
+	$info = _idm_profile_get_user($userid);
+	$var['info'] = $info;
+	return theme('terminate_mobile', $var);
+}
+
+function idm_profile_mobile_revoke_employee($userid='') {
+	drupal_add_js(drupal_get_path('module', 'idm_profile').'/js/script.js');
+	global $user;
+	if (empty($userid)) {
+		$userid = empty($user->name) ? '' : $user->name;
+	}
+	$info = _idm_profile_get_user($userid);
+	$var['info'] = $info;
+	return theme('revoke_mobile', $var);
+}
+
+function idm_profile_mobile_transfer_employee($userid='') {
+  drupal_add_js(drupal_get_path('module', 'idm_profile').'/js/script.js');
+  global $user;
+  if (empty($userid)) {
+    $userid = empty($user->name) ? '' : $user->name;
+  }
+
+  $info = _idm_profile_get_user($userid);
+  $var['info'] = $info;
+  $var['manager_lookup_field'] = idm_profile_get_manager_lookup_field($userid);
+  return theme('transfer_mobile', $var);
+}
+function idm_profile_upload_image() {
+	global $user;
+	$upload = variable_get('supportcentral_upload_url','https://supportcentral.inbcu.com/profile/photo_HR_upload.asp?ohr_id=') . $user->name . '.&temp_flag=1';
+	print '<iframe src='.$upload.' frameborder="0" width="980" height="400"></iframe>';
+//	print '<iframe src="http://supportcentral.inbcu.com/profile/photo_HR_upload.asp?ohr_id=' . $user->name . '&temp_flag=1" frameborder="0" width="980" height="400"></iframe>';
+}
+function idm_profile_name_autocomplete($string, $check = 'client') {
+  global $user;
+  $matches = array();
+  $solr_base = variable_get('emp_dir_solr','http://dev.idmportal.inbcu.com:8080/solr/collection1');
+  //$url = $solr_base."/select?q=category:worker%20AND%20%28usertype:Employee%20OR%20usertype:Contractor%29%20AND%20title:*".urlencode($string)."*&wt=json&indent=true";
+  $url = $solr_base."/select?q=category:worker%20AND%20title:*".urlencode($string)."*&wt=json&indent=true";
+  $response_obj = drupal_http_request($url);
+  $response = $response_obj->data;
+  $docs = json_decode($response)->response->docs;
+  $numofrecords = json_decode($response)->response->numFound;
+  $icon_img_path = drupal_get_path('theme', 'idmtheme').'/images/solid-person-icon-autocomplete.svg';
+  if ($icon_img_path) {
+    $icon = '<img src="/' . $icon_img_path . '">';
+  }
+  foreach ($docs as $value ) {
+    $matches[$value->title[0]] = $icon.' '.str_ireplace($string,"<span class=\"auto-highlight\">$string</span>" , $value->title[0]).'<span style="display:none;" class="myClass">'.$value->usertype.'</span><span style="display:none;" class="locationid">'.$value->locationid.'</span>';
+  }
+
+  if($check == 'server') {
+	  $data = json_encode($matches);
+	  $result = preg_match("/([\w\s]+)\(([\d]+)\)*/", $data, $match);
+	  $valid = 0;
+	  $sso = '';
+		if(isset($match[2])){
+			if(preg_match("/[\d]+/", $string)){
+				if(trim($match[2]) == trim($string)){
+					$valid = 1;
+					$sso = $string;
+				}
+			}else if(isset($match[1])){
+				if(strtolower(trim($match[1])) == strtolower(trim($string))){
+					$valid = 1;
+					$sso = $match[2];
+				}
+			}
+		}
+	 return $valid.'-'.$sso;
+  } else {
+	  if($numofrecords > 0) {
+          $matches = $matches;
+	  } else {
+	      $noresult = NULL;
+	      $matches[$noresult] = "<div class='no-search-result'><div class='noresult'>Sorry, there are no results for <br><span class='searchtxt'><b>".$string."</b></span></div></div>";
+	  }
+	  drupal_json_output($matches);
+  }
+}
+
+function idm_profile_nameanddeviceaccount_autocomplete($string, $check = 'client') {
+  global $user;
+  $matches = array();
+  $solr_base = variable_get('emp_dir_solr','http://dev.idmportal.inbcu.com:8080/solr/collection1');
+  //$url = $solr_base."/select?q=category:worker%20AND%20%28usersubpersontype:device%29%20AND%20title:*".urlencode($string)."*&wt=json&indent=true";//old
+  //$url = $solr_base."/select?q=category:worker%20AND%20%28usertype:Employee%20OR%20usersubpersontype:device%29%20AND%20title:*".urlencode($string)."*&wt=json&indent=true";
+  $url = $solr_base."/select?q=category:worker%20AND%20%28usertype:*%20OR%20usersubpersontype:device%29%20AND%20title:*".urlencode($string)."*&wt=json&indent=true";
+  $response_obj = drupal_http_request($url);
+  $response = $response_obj->data;
+  $docs = json_decode($response)->response->docs;
+  $numofrecords = json_decode($response)->response->numFound;
+  $icon_img_path = drupal_get_path('theme', 'idmtheme').'/images/solid-person-icon-autocomplete.svg';
+  if ($icon_img_path) {
+    $icon = '<img src="/' . $icon_img_path . '">';
+  }
+  foreach ($docs as $value ) {
+    $matches[$value->title[0]] = $icon.' '.str_ireplace($string,"<span class=\"auto-highlight\">$string</span>" , $value->title[0]).'<span style="display:none;" class="myClass">'.$value->usertype.'</span><span style="display:none" class="usersubpersontype">'.$value->usersubpersontype.'</span><span style="display:none;" class="locationid">'.$value->locationid.'</span>';
+  }
+  if($check == 'server') {
+	  $data = json_encode($matches);
+	  $result = preg_match("/([\w\s]+)\(([\d]+)\)*/", $data, $match);
+	  $valid = 0;
+	  $sso = '';
+		if(isset($match[2])){
+			if(preg_match("/[\d]+/", $string)){
+				if(trim($match[2]) == trim($string)){
+					$valid = 1;
+					$sso = $string;
+				}
+			}else if(isset($match[1])){
+				if(strtolower(trim($match[1])) == strtolower(trim($string))){
+					$valid = 1;
+					$sso = $match[2];
+				}
+			}
+		}
+	 return $valid.'-'.$sso;
+  } else {
+	  if($numofrecords > 0) {
+          $matches = $matches;
+	  } else {
+	      $noresult = NULL;
+	      $matches[$noresult] = "<div class='no-search-result'><div class='noresult'>Sorry, there are no results for <br><span class='searchtxt'><b>".$string."</b></span></div></div>";
+	  }
+	  drupal_json_output($matches);
+  }
+}
+
+function idm_profile_manager_autocomplete($string){
+  $matches = array();
+  $solr_base = variable_get('emp_dir_solr','http://dev.idmportal.inbcu.com:8080/solr/collection1');
+  $url = $solr_base."/select?q=category:worker%20AND%20usertype:employee%20AND%20title:*".urlencode($string)."*&wt=json&indent=true";
+  $response_obj = drupal_http_request($url);
+  $response = $response_obj->data;
+  $docs = json_decode($response)->response->docs;
+  $numofrecords = json_decode($response)->response->numFound;
+  $icon_img_path = drupal_get_path('theme', 'idmtheme').'/images/solid-person-icon-autocomplete.svg';
+  if ($icon_img_path) $icon = '<img src="/' . $icon_img_path . '">&nbsp;';
+  if($numofrecords > 0) {
+	  foreach ($docs as $value ) {
+	    //$matches[$value->title[0]] = str_ireplace($string,"<span class=\"auto-highlight\">$string</span>" , $value->title[0]);
+	    $url = 'url="/profile/'.$value->id.'"';
+	    $matches[$value->title[0]] = '<div class="search-result"><span class="url"'.$url.'>'.$icon.'<div class="resultrow">'.str_ireplace($string,"<span class=\"auto-highlight\">$string</span>" , $value->title[0]).'</div></span></div>';
+	  }
+  } else {
+      $noresult = NULL;
+      $matches[$noresult] = "<div class='no-search-result'><div class='noresult'>Sorry, there are no results for <br><span class='searchtxt'><b>".$string."</b></span></div></div>";
+  }
+  drupal_json_output($matches);
+}
+function idm_profile_mgr_autocomplete($string){
+  $matches = array();
+  $solr_base = variable_get('emp_dir_solr','http://dev.idmportal.inbcu.com:8080/solr/collection1');
+  $url = $solr_base."/select?q=category:worker%20AND%20usertype:employee%20AND%20title:*".urlencode($string)."*&wt=json&indent=true";
+  $response_obj = drupal_http_request($url);
+  $response = $response_obj->data;
+  $docs = json_decode($response)->response->docs;
+  $numofrecords = json_decode($response)->response->numFound;
+  $icon_img_path = drupal_get_path('theme', 'idmtheme').'/images/solid-person-icon-autocomplete.svg';
+  if ($icon_img_path) $icon = '<img src="/' . $icon_img_path . '">&nbsp;';
+  if($numofrecords > 0) {
+	  foreach ($docs as $value ) {
+	    //$matches[$value->title[0]] = str_ireplace($string,"<span class=\"auto-highlight\">$string</span>" , $value->title[0]);
+	    $url = 'url="/profile/'.$value->id.'"';
+	    $matches[$value->title[0]] = '<div class="search-result"><span class="url"'.$url.'>'.$icon.'<span class="resultrow">'.str_ireplace($string,"<span class=\"auto-highlight\">$string</span>" , $value->title[0]).'</span></span></div>';
+	  }
+  } else {
+      $noresult = NULL;
+      $matches[$noresult] = "<div class='no-search-result'><div class='noresult'>Sorry, there are no results for <br><span class='searchtxt'><b>".$string."</b></span></div></div>";
+  }
+  drupal_json_output($matches);
+}
+function idm_profile_globalsearch_autocomplete($string){
+  $matches = array();
+  $solr_base = variable_get('emp_dir_solr','http://dev.idmportal.inbcu.com:8080/solr/collection1');
+  $url = $solr_base.'/select?q=*'.idm_profile_format_search_keyword($string).'*%20AND%20-category:location&wt=json&indent=true';
+  $response_obj = drupal_http_request($url);
+  $response = $response_obj->data;
+  $docs = json_decode($response)->response->docs;
+  $numofrecords = json_decode($response)->response->numFound;
+  if($numofrecords > 0) {
+	  foreach ($docs as $value ) {
+	    switch ($value->category) {
+	      case 'worker' :
+	        $icon_img_path = drupal_get_path('theme', 'idmtheme').'/images/solid-person-icon-autocomplete.svg';
+			$url = 'url="/profile/'.$value->id.'"';
+	        break;
+	      default :
+	        $icon_img_path = drupal_get_path('theme', 'idmtheme').'/images/asseticon.jpg';
+			if (substr($value->url,0,4) == 'http') {
+				$url = ' ext_url="'.$value->url.'"';
+			} else {
+				$url = ' url="'.$value->url.'"';
+			}
+	        break;
+	    }
+		$icon = '';
+		if ($icon_img_path) $icon = '<img src="/' . $icon_img_path . '">&nbsp;';
+	    /* Fix for IP-581*/
+	    $matches[$value->title[0]] = '<div class="search-result"><span class="url"'.$url.'>'.$icon.'<div class="resultrow">'.str_ireplace($string,"<span class=\"auto-highlight\">$string</span>" , $value->title[0]).'</div></span></div>';
+	  }
+  }
+  else {
+       /* Fix for IP-581*/
+       $noresult = NULL;
+       $matches[$noresult] = "<div class='no-search-result'><div class='noresult'>Sorry, there are no results for <span class='searchtxt'>".$string."</span></div>
+  					<div class='searchtipshead'>Search Tips:</div>
+  					<ul class='searchtips'>
+  						<li>Check your spelling.</li>
+  						<li>Try fewer or more general words.</li>
+  						<li>Try using acronyms or using different words.</li>
+  						<li>Try using fewer words. Your search might be too specific.</li>
+					</ul></div>"; /* Fix for IP-581*/
+  }
+  drupal_json_output($matches);
+}
+function idm_profile_directreports_autocomplete($string){
+  global $user;
+  $userid = empty($user->name) ? '' : $user->name;
+  //$userid = "206097090";
+  $matches = array();
+  $solr_base = variable_get('emp_dir_solr','http://dev.idmportal.inbcu.com:8080/solr/collection1');
+  $url = $solr_base."/select?q=supervisorid:$userid%20AND%20title:*".urlencode($string)."*&wt=json&indent=true";
+  $response_obj = drupal_http_request($url);
+  $response = $response_obj->data;
+  $docs = json_decode($response)->response->docs;
+  $numofrecords = json_decode($response)->response->numFound;
+  //cache_clear_all('*', 'cache', TRUE);
+  if($numofrecords > 0) {
+	  foreach ($docs as $value ) {
+	    $matches[$value->title[0]] = str_ireplace($string,"<span class=\"auto-highlight\">$string</span>" , $value->title[0]);
+	  }
+  } else {
+    $noresult = NULL;
+    $matches[$noresult] = "<div class='no-search-result'><div class='noresult'>Sorry, there are no results for <span class='searchtxt'><b>".$string."</b></span></div></div>";
+    //$matches[$noresult] = "<div class='no-search-result'><div class='noresult'>Sorry, there are no results for <span class='searchtxt'><b>".$string."</b></span></div><div class='searchtipshead'>Search Tips:</div><ul class='searchtips'><li>Check your spelling.</li><li>Try fewer or more general words.</li><li>Try using acronyms or using different words.</li><li>Try using fewer words. Your search might be too specific.</li></ul></div>";
+  }
+  drupal_json_output($matches);
+}
+function idm_profile_address_autocomplete($string){
+  $matches = array();
+  if ($string) {
+     /* $sub_query = db_select('taxonomy_vocabulary', 'voc')
+              ->fields('voc', array('vid'))
+              ->condition('name','Location', '=');
+      $query =  db_select('taxonomy_term_data', 'term');
+      $query->leftJoin('field_data_field_address_line_1', 'addr1', 'term.tid = addr1.entity_id');
+      $query->leftJoin('field_data_field_address_line_2', 'addr2', 'term.tid = addr2.entity_id');
+      $query->leftJoin('field_data_field_state', 'state', 'term.tid = state.entity_id');
+      $query->leftJoin('field_data_field_post_code', 'post', 'term.tid = post.entity_id');
+      $query->leftJoin('field_data_field_phone_code', 'phone', 'term.tid = phone.entity_id');
+      $or = db_or()->condition('addr1.field_address_line_1_value','%'.db_like($string).'%', 'LIKE')
+                  ->condition('addr2.field_address_line_2_value','%'.db_like($string).'%', 'LIKE')
+                  ->condition('state.field_state_value','%'.db_like($string).'%', 'LIKE')
+                  ->condition('post.field_post_code_value','%'.db_like($string).'%', 'LIKE');
+      $result = $query->fields('term', array('tid','name'))
+                  ->fields('addr1', array('field_address_line_1_value'))
+                  ->fields('addr2', array('field_address_line_2_value'))
+                  ->fields('state', array('field_state_value'))
+                  ->fields('post', array('field_post_code_value'))
+                  ->fields('phone', array('field_phone_code_value'))
+                  ->condition($or)
+                  ->condition('term.vid',$sub_query, 'IN')
+                  ->range(0, 10)
+                  ->execute()
+                  ->fetchAll();
+      if($result) {
+	      foreach ($result as $address) {
+	        $loc_id = $address->name.'|'.check_plain($address->field_address_line_1_value. " , " .$address->field_state_value. " , " .$address->field_post_code_value).'|'.$address->field_phone_code_value;
+	        $location = check_plain(ucfirst($address->field_address_line_1_value). ", " .ucfirst($address->field_state_value). ", " .ucfirst($address->field_post_code_value));
+	        $matches[$loc_id] = str_ireplace($string, "<span class=\"auto-highlight\">$string</span>", $location);
+	      }
+      } else {
+         $noresult = NULL;
+         $matches[$noresult] = "<div class='no-search-result'><div class='noresult'>Sorry, there are no results for <br><span class='searchtxt'><b>".$string."</b></span></div></div>";
+      }*/
+
+	  $solr_base = variable_get('emp_dir_solr','http://dev.idmportal.inbcu.com:8080/solr/collection1');
+	  $url = $solr_base."/select?q=category:location%20AND%20title:*".urlencode($string)."*&wt=json&indent=true";
+	  $response_obj = drupal_http_request($url);
+	  $response = $response_obj->data;
+	  $docs = json_decode($response)->response->docs;
+	  $numofrecords = json_decode($response)->response->numFound;
+	  if($numofrecords > 0) {
+		  foreach ($docs as $value ) {
+	        $location_split = explode(",", $value->title[0]);
+	        $country_code = explode(" ", $location_split[count($location_split)-1]);
+	        //echo $value->title[0].'--'.$value->id.'---'.$country_code[3].'---'.count($location_split).'<br>';
+
+            $sub_query = db_select('taxonomy_vocabulary', 'voc')
+              ->fields('voc', array('vid'))
+              ->condition('name','Country', '=');
+
+	        $query =  db_select('taxonomy_term_data', 'term');
+		    $query->leftJoin('field_data_field_phone_code', 'phonecode', 'term.tid = phonecode.entity_id');
+		    $query->leftJoin('field_data_field_country_code', 'countrycode', 'term.tid = countrycode.entity_id');
+		    $query->fields('phonecode', array('field_phone_code_value'));
+		    $db_and = db_and()->condition('countrycode.field_country_code_value',$country_code[count($country_code)-1], '=');
+            $result = $query->condition('term.vid',$sub_query, 'IN')
+				      ->condition($db_and)
+                      ->execute();
+            foreach ($result as $c_code) {
+                $countrycode = $c_code->field_phone_code_value;
+            }
+
+	        $fulladdress = str_replace($country_code[count($country_code)-1],"", $value->title[0]);
+	        $loc_id = $value->id.'|'.$fulladdress.'|'.$countrycode;
+	        $location = $fulladdress;
+		    $matches[$loc_id] = str_ireplace($string, "<span class=\"auto-highlight\">$string</span>", $location);
+		  }
+	  } else {
+	    $noresult = NULL;
+	    $matches[$noresult] = "<div class='no-search-result'><div class='noresult'>Sorry, there are no results for <span class='searchtxt'><b>".$string."</b></span></div></div>";
+	  }
+  }
+  // return for JS
+  drupal_json_output($matches);
+}
+/**
+ * Solr search for address
+ * @param type $string
+ */
+function idm_profile_address_solr_autocomplete($string){
+  $matches = array();
+  if(!empty($string)){
+    $solr_base = variable_get('emp_dir_solr','http://dev.idmportal.inbcu.com:8080/solr/collection1');
+    $url = $solr_base."/select?q=title:*".urlencode($string)."*%20AND%20category:location&wt=json&indent=true";
+    $response_obj = drupal_http_request($url);
+    $response = $response_obj->data;
+    $docs = json_decode($response)->response->docs;
+    $numofrecords = json_decode($response)->response->numFound;
+    if($numofrecords > 0) {
+      foreach ($docs as $value ) {
+        $location_details = $value->id.'|'.$value->title[0].'|1';
+        $matches[$location_details] = str_ireplace($string,"<span class=\"auto-highlight\">$string</span>" , $value->title[0]);
+      }
+    } else {
+      $noresult = NULL;
+      $matches[$noresult] = "<div class='no-search-result'><div class='noresult'>Sorry, there are no results for <br><span class='searchtxt'><b>".$string."</b></span></div></div>";
+    }
+  }
+  drupal_json_output($matches);
+}
+
+function idm_profile_application_autocomplete($string){
+  $matches = array();
+  if ($string) {
+      $sub_query = db_select('taxonomy_vocabulary', 'voc')
+              ->fields('voc', array('vid'))
+              ->condition('name','Application', '=');
+      $query =  db_select('taxonomy_term_data', 'term');
+      $query->leftJoin('field_data_field_application_id', 'aid', 'term.tid = aid.entity_id');
+      $or = db_or()->condition('aid.field_application_id_value','%'.db_like($string).'%', 'LIKE')
+                  ->condition('term.name','%'.db_like($string).'%', 'LIKE');
+      $result = $query->fields('term', array('tid','name'))
+                  ->fields('aid', array('field_application_id_value'))
+                  ->condition($or)
+                  ->condition('term.vid',$sub_query, 'IN')
+                  ->range(0, 10)
+                  ->execute()
+                  ->fetchAll();
+      if($result) {
+	      foreach ($result as $application) {
+	        $application_name = $application->name. "  ".$application->field_application_id_value;
+	        $matches[$application_name] = str_ireplace($string,"<span class=\"auto-highlight\">$string</span>", $application_name);
+	      }
+      } else {
+         $noresult = NULL;
+         $matches[$noresult] = "<div class='no-search-result'><div class='noresult'>Sorry, there are no results for <br><span class='searchtxt'><b>".$string."</b></span></div></div>";
+      }
+  }
+  // return for JS
+  drupal_json_output($matches);
+
+}
+function idm_profile_post_profile_upload_updates() {
+	global $user;
+	$userid = $user->name;
+	$cache_cid = IDM_API_GET_USER . '_' . $userid;
+	idm_portal_clear_cache($cache_cid);
+	idm_profile_remove_profile_pic_styles($userid);
+	//cache_clear_all('*', 'cache', TRUE);
+	ctools_object_cache_clear('api', 'profile_data'.$userid);
+}
+function idm_profile_remove_profile_pic_styles($userid){
+	$url		= variable_get('supportcentral_get_url','http://supportcentral.inbcu.com/images/person/temp/') . $userid . '.jpg';
+	$hash       = md5($url);
+	$scheme     = file_default_scheme();
+	$directories  = array($scheme . '://imagecache/externals',
+                          $scheme . '://styles/profile_header/public/imagecache/externals',
+                          $scheme . '://styles/profile_main/public/imagecache/externals',
+                          $scheme . '://styles/profile_sidebar/public/imagecache/externals');
+	foreach ($directories as $directory)
+		file_unmanaged_delete($directory. '/' . $hash);
+}
+function idm_profile_get_location_id($emp_id){
+  $loc_str = "";
+  $url = variable_get('rest_api_check_url', 'http://3.3.175.127:8080/idm-api/rest');
+  $url = $url."/internal/users/".$emp_id;
+  /*$response_obj = drupal_http_request($url);
+  $response = json_decode($response_obj->data);*/
+  $response = json_decode(idm_profile_execute_curl($url));
+  $locid = $response->custom_locationId;
+  $address_obj = taxonomy_get_term_by_name($locid);
+  $loc_str = $locid;
+  foreach ($address_obj as $value) {
+    $loc_str = $loc_str."=".check_plain($value->field_address_line_1[LANGUAGE_NONE][0]['value']. " , " .$value->field_state[LANGUAGE_NONE][0]['value']. " , " .$value->field_post_code[LANGUAGE_NONE][0]['value'])."=".$value->field_phone_code[LANGUAGE_NONE][0]['value'];
+  }
+  //$loc_str .= "=".idm_profile_get_location_details_from_solr($locid, TRUE);
+  echo $loc_str;
+}
+function idm_profile_get_location_details($loc_id){
+  $adr_str = "";
+  $address_obj = taxonomy_get_term_by_name($loc_id);
+  foreach ($address_obj as $value) {
+    $adr_str = check_plain($value->field_address_line_1[LANGUAGE_NONE][0]['value']. " , " .$value->field_state[LANGUAGE_NONE][0]['value']. " , " .$value->field_post_code[LANGUAGE_NONE][0]['value']);
+  }
+  echo $adr_str;
+}
+/**
+ * Solr search to get the location details
+ */
+function idm_profile_get_location_details_from_solr($loc_id, $phone_required = FALSE, $return_only_phone = FALSE){
+  $location_details = "";
+  $phone_code = 1;
+  if(!empty($loc_id)){
+    $solr_base = variable_get('emp_dir_solr','http://dev.idmportal.inbcu.com:8080/solr/collection1');
+    $url = $solr_base."/select?q=id:".urlencode($loc_id)."%20AND%20category:location&wt=json&indent=true";
+    $response_obj = drupal_http_request($url);
+    $response = $response_obj->data;
+    $docs = json_decode($response)->response->docs;
+    $numofrecords = json_decode($response)->response->numFound;
+    if($numofrecords > 0) {
+      $location_details = check_plain($docs[0]->title[0]);
+      if($phone_required){
+        if($return_only_phone){
+          $location_details = $phone_code;
+        }else{
+          $location_details .= "=".$phone_code;
+        }
+      }
+    }
+  }
+  return $location_details;
+}
+
+function idm_profile_change_password() {
+  $external_url = variable_get('idm_password_change_url','https://sso.stg.inbcu.com/nbcucentral/app/pwchange.jsp');
+  drupal_goto($external_url, array('external' => TRUE));
+}
+function idm_profile_check_email_id($emailid) {
+  $url = variable_get('rest_api_check_url', 'http://3.3.175.127:8080/idm-api/rest');
+  $filter = rawurlencode('email eq '.$emailid.' or alternateemail eq '.$emailid.' or mailalternateaddress eq '. $emailid);
+  $url = $url."/internal/users/?filter=".$filter;
+  $response = json_decode(idm_profile_execute_curl($url));
+  echo $response->results[0]->custom_count;
+}
+function idm_profile_check_email_id_submit($emailid) {
+  $url = variable_get('rest_api_check_url', 'http://3.3.175.127:8080/idm-api/rest');
+  $filter = rawurlencode('email eq '.$emailid.' or alternateemail eq '.$emailid.' or mailalternateaddress eq '. $emailid);
+  $url = $url."/internal/users/?filter=".$filter;
+  $response = json_decode(idm_profile_execute_curl($url));
+  return isset($response->results[0]->custom_count) ? $response->results[0]->custom_count : 0;
+}
+
+function idm_profile_groupanduser_autocomplete($searchtype='restrictions', $string){
+  $matches = array();
+  $solr_base = variable_get('emp_dir_solr','http://dev.idmportal.inbcu.com:8080/solr/collection1');
+  if($searchtype == 'restrictions') {
+    $url = $solr_base.'/select?q=%28category:worker%20OR%20category:group%20%29%20AND%20title:*'.idm_profile_format_search_keyword($string).'*%20AND%20email:*&wt=json&indent=true';
+  }
+  else {
+	  $url = $solr_base.'/select?q=%28category:worker%20OR%20%28category:group%20AND%20usertype:DLG%29%29%20AND%20title:*'.idm_profile_format_search_keyword($string).'*%20AND%20email:*&wt=json&indent=true';
+  }
+  $response_obj = drupal_http_request($url);
+  $response = $response_obj->data;
+  $docs = json_decode($response)->response->docs;
+  $numofrecords = json_decode($response)->response->numFound;
+  if($numofrecords > 0) {
+	  foreach ($docs as $value ) {
+	    if($value->category == 'worker'){
+	      $icon_img_path = drupal_get_path('theme', 'idmtheme').'/images/solid-person-icon-autocomplete.svg';
+	      $url = '/profile/'.$value->id;
+	      $posofmanagername = strpos($value->title[0],"(");
+	      $managername = substr($value->title[0], 0, $posofmanagername-1);
+	    }
+	    if($value->category == 'group'){
+	      $icon_img_path = drupal_get_path('theme', 'idmtheme').'/images/asseticon.jpg';
+	      $usertype = $value->usertype;
+	      $url = '/group/'.$usertype.'/'.$value->id;
+	      $managername = $value->title[0];
+	    }
+	    $icon = '';
+	    if ($icon_img_path) $icon = '<img src="/' . $icon_img_path . '">&nbsp;';
+	    if ($searchtype == 'restrictions') {
+	      $data = '<div class="mgr-name"><div class="mgr-icon"><a href="'.$url.'">'.$icon.'</a></div><div class="mgr-link"><a href="'.$url.'">'.$value->title[0].'</a></div><div class="group-delete" ssoname="'.$managername.'" id='.$value->id.'></div></div>--'.$value->id.'--'.$managername;
+	    } else if ($searchtype == 'additionalmanager'){
+	      $data = '<div class="new-mgr-name"><div class="new-mgr-icon"><a href="'.$url.'">'.$icon.'</a></div><div class="new-mgr-link"><a href="'.$url.'">'.$value->title[0].'</a></div><div class="new-mgr-delete" ssoname="'.$managername.'" id='.$value->id.'></div></div>--'.$value->id.'--'.$managername;
+	    }
+	    $matches[$data] = '<div class="search-result">'.$icon.str_ireplace($string,"<span class=\"auto-highlight\">$string</span>" , $value->title[0]).'</div>';
+	  }
+  } else {
+      $noresult = NULL;
+      $matches[$noresult] = "<div class='no-search-result'><div class='noresult'>Sorry, there are no results for <br><span class='searchtxt'><b>".$string."</b></span></div></div>";
+  }
+  drupal_json_output($matches);
+}
+
+function idm_profile_member_autocomplete($string){
+  $matches = array();
+  $solr_base = variable_get('emp_dir_solr','http://dev.idmportal.inbcu.com:8080/solr/collection1');
+  $url = $solr_base.'/select?q=%28category:worker%20OR%20category:group%20%29%20AND%20title:*'.idm_profile_format_search_keyword($string).'*%20AND%20email:*&wt=json&indent=true';
+  $response_obj = drupal_http_request($url);
+  $response = $response_obj->data;
+  $docs = json_decode($response)->response->docs;
+  $numofrecords = json_decode($response)->response->numFound;
+  if($numofrecords > 0) {
+	  foreach ($docs as $value ) {
+	    if($value->category == 'worker'){
+	      $icon_img_path = drupal_get_path('theme', 'idmtheme').'/images/solid-person-icon-autocomplete.svg';
+	      $url = '/profile/'.$value->id;
+	      $posofmembername = strpos($value->title[0],"(");
+	      $membername = substr($value->title[0], 0, $posofmembername-1);
+	    }
+	    if($value->category == 'group'){
+	      $icon_img_path = drupal_get_path('theme', 'idmtheme').'/images/asseticon.jpg';
+	      $usertype = $value->usertype;
+	      $url = '/group/'.$usertype.'/'.$value->id;
+	      $membername = $value->title[0];
+	    }
+	    $icon = '';
+	    if ($icon_img_path) $icon = '<img src="/' . $icon_img_path . '">&nbsp;';
+	    $data = '<div class="new-member-name"><div class="new-member-icon"><a href="'.$url.'">'.$icon.'</a></div><div class="new-member-link"><a href="'.$url.'">'.$value->title[0].'</a></div><div class="new-member-delete" ssoname="'.$membername.'" id='.$value->id.'></div></div>--'.$value->id.'--'.$membername;
+	    $matches[$data] = '<div class="search-result">'.$icon.str_ireplace($string,"<span class=\"auto-highlight\">$string</span>" , $value->title[0]).'</div>';
+	  }
+  } else {
+      $noresult = NULL;
+      $matches[$noresult] = "<div class='no-search-result'><div class='noresult'>Sorry, there are no results for <br><span class='searchtxt'><b>".$string."</b></span></div></div>";
+  }
+  drupal_json_output($matches);
+}
+
+function idm_profile_get_company($machine_name){
+  $options = array();
+  $vid = taxonomy_vocabulary_machine_name_load($machine_name)->vid;
+  $options_source = taxonomy_get_tree($vid);
+  foreach($options_source as $item ) {
+    $options[$item->name] = $item->name;
+  }
+  $options[''] = 'Select';
+  ksort($options);
+  //Moving Other to the bottom of the list
+  if (in_array('Other', $options)) {
+    unset($options['Other']);
+    //array_push($options, $options['Other'] = 'Other');
+    $options['Other'] = 'Other';
+  }
+  return $options;
+}
+
+function idm_profile_tilde_autocomplete($string, $check = 'client'){
+  $matches = array();
+  $solr_base = variable_get('emp_dir_solr','http://dev.idmportal.inbcu.com:8080/solr/collection1');
+  $url = $solr_base."/select?q=category:worker%20AND%20%28usertype:Employee%20OR%20usertype:Contractor%29%20AND%20hastilde:true%20AND%20title:*".urlencode($string)."*&wt=json&indent=true";
+  $response_obj = drupal_http_request($url);
+  $response = $response_obj->data;
+  $docs = json_decode($response)->response->docs;
+  $icon_img_path = drupal_get_path('theme', 'idmtheme').'/images/solid-person-icon-autocomplete.svg';
+  if ($icon_img_path) {
+    $icon = '<img src="/' . $icon_img_path . '">';
+  }
+  foreach ($docs as $value ) {
+    $matches[$value->title[0]] = $icon.' '.str_ireplace($string,"<span class=\"auto-highlight\">$string</span>" , $value->title[0]);
+  }
+  if($check == 'server') {
+	  $data = json_encode($matches);
+	  $result = preg_match("/([\w\s]+)\(([\d]+)\)*/", $data, $match);
+	  $valid = 0;
+	  $sso = '';
+		if(isset($match[2])){
+			if(preg_match("/[\d]+/", $string)){
+				if(trim($match[2]) == trim($string)){
+					$valid = 1;
+					$sso = $string;
+				}
+			}else if(isset($match[1])){
+				if(strtolower(trim($match[1])) == strtolower(trim($string))){
+					$valid = 1;
+					$sso = $match[2];
+				}
+			}
+		}
+	 return $valid.'-'.$sso;
+  } else {
+	  drupal_json_output($matches);
+  }
+}
+
+
+
+function idm_profile_tildesomeoneelsename_autocomplete($string, $check = 'client'){
+  $matches = array();
+  $solr_base = variable_get('emp_dir_solr','http://dev.idmportal.inbcu.com:8080/solr/collection1');
+  $url = $solr_base."/select?q=category:worker%20AND%20%28usertype:Employee%20OR%20usertype:Contractor%29%20AND%20hastilde:false%20AND%20title:*".urlencode($string)."*&wt=json&indent=true";
+  $response_obj = drupal_http_request($url);
+  $response = $response_obj->data;
+  $docs = json_decode($response)->response->docs;
+  $numofrecords = json_decode($response)->response->numFound;
+  $icon_img_path = drupal_get_path('theme', 'idmtheme').'/images/solid-person-icon-autocomplete.svg';
+  if ($icon_img_path) {
+    $icon = '<img src="/' . $icon_img_path . '">';
+  }
+  if($numofrecords > 0) {
+	  foreach ($docs as $value ) {
+	    $matches[$value->title[0]] = $icon.' '.str_ireplace($string,"<span class=\"auto-highlight\">$string</span>" , $value->title[0]);
+	  }
+  } else {
+      $noresult = NULL;
+      $matches[$noresult] = "<div class='no-search-result'><div class='noresult'>Sorry, there are no results for <br><span class='searchtxt'><b>".$string."</b></span></div></div>";
+  }
+  if($check == 'server') {
+	  $data = json_encode($matches);
+	  $result = preg_match("/([\w\s]+)\(([\d]+)\)*/", $data, $match);
+	  $valid = 0;
+	  $sso = '';
+		if(isset($match[2])){
+			if(preg_match("/[\d]+/", $string)){
+				if(trim($match[2]) == trim($string)){
+					$valid = 1;
+					$sso = $string;
+				}
+			}else if(isset($match[1])){
+				if(strtolower(trim($match[1])) == strtolower(trim($string))){
+					$valid = 1;
+					$sso = $match[2];
+				}
+			}
+		}
+	 return $valid.'-'.$sso;
+  } else {
+	 drupal_json_output($matches);
+  }
+  //drupal_json_output($matches);
+}
+
+function idm_profile_format_search_keyword($keyword){
+  return urlencode(preg_replace('/@/', '"@"', trim($keyword)));
+}
+
+function idm_profile_employee_autocomplete($string){
+  global $user;
+  $matches = array();
+  $solr_base = variable_get('emp_dir_solr','http://dev.idmportal.inbcu.com:8080/solr/collection1');
+  $url = $solr_base."/select?q=category:worker%20AND%20%28usertype:Employee%29%20AND%20title:*".urlencode($string)."*&wt=json&indent=true";
+  $response_obj = drupal_http_request($url);
+  $response = $response_obj->data;
+  $docs = json_decode($response)->response->docs;
+  $numofrecords = json_decode($response)->response->numFound;
+  $icon_img_path = drupal_get_path('theme', 'idmtheme').'/images/solid-person-icon-autocomplete.svg';
+  if ($icon_img_path) {
+    $icon = '<img src="/' . $icon_img_path . '">';
+  }
+  if($numofrecords > 0) {
+	  foreach ($docs as $value ) {
+	    $matches[$value->title[0]] = $icon.' '.str_ireplace($string,"<span class=\"auto-highlight\">$string</span>" , $value->title[0]);
+	  }
+  } else {
+      $noresult = NULL;
+      $matches[$noresult] = "<div class='no-search-result'><div class='noresult'>Sorry, there are no results for <br><span class='searchtxt'><b>".$string."</b></span></div></div>";
+  }
+  drupal_json_output($matches);
+}

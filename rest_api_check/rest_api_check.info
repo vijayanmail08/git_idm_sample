@@ -1,0 +1,13 @@
+name = Rest API Check
+description = To check Rest APIs
+package = IDM
+core = 7.x
+; dependencies[] = file
+; dependencies[] = image
+
+; Information added by drupal.org packaging script on 2013-04-23
+version = "7.x-2.10"
+core = "7.x"
+project = "rest_api_check"
+datestamp = "1366693516"
+

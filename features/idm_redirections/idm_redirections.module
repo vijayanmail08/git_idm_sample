@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the IDM redirections feature.
+ */
+
+include_once 'idm_redirections.features.inc';

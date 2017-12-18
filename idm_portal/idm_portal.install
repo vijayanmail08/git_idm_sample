@@ -1,0 +1,21 @@
+<?php
+
+function idm_portal_install() {
+  db_update('system')
+    ->fields(array(
+      'weight' => 1,
+    ))
+    ->condition('type', 'module', '=')
+    ->condition('name', 'simplesamlphp_auth', '=')
+    ->execute();
+}
+
+function idm_portal_uninstall() {
+  db_update('system')
+    ->fields(array(
+      'weight' => 0,
+    ))
+    ->condition('type', 'module', '=')
+    ->condition('name', 'simplesamlphp_auth', '=')
+    ->execute();
+}

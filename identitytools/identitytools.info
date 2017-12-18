@@ -1,0 +1,11 @@
+name = Identity Tools
+description = Identity Tools
+package = IDM
+core = 7.x
+
+; Information added by drupal.org packaging script on 2013-04-23
+version = "7.x-1.00"
+core = "7.x"
+project = "identitytools"
+datestamp = "1366693516"
+dependencies[] = chosen

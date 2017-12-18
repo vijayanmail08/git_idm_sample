@@ -1,0 +1,64 @@
+<?php
+
+/**
+ * Implementation of hook_menu().
+ */
+function identitytools_menu() {
+  $items = array ();
+
+  $items['tools/provision/%'] = array (
+    'title' => 'Provision New Account',
+    'page callback' => '_identitytools_provision',
+    'page arguments' => array (
+      1, 2
+    ),
+    'access arguments' => array('access idm profile')
+  );
+
+  return $items;
+}
+
+function _identitytools_provision($delta, $appname) {
+
+	//echo "$delta $appname";
+	$var = array();
+	$var['info'] = array();
+	$var['info']['sso'] = '206429057';
+	return theme('tools_provision', $var);
+}
+
+function identitytools_permission() {
+  return array(
+    'access idm profile' => array(
+      'title' => t('Access IDM profile'),
+      'description' => t('Access IDM user profiles'),
+    ),
+  );
+}
+
+function identitytools_form_alter(&$form, &$form_state, $form_id) {
+	if ($form_id == 'idm_create_new_contractor' || $form_id == 'idm_profile_edit_user_profile' || $form_id == 'idm_create_new_functional_account' || $form_id == 'idm_request_assets_certificate') {
+		$path = drupal_get_path('theme', 'idmtheme');
+		drupal_add_js($path . '/js/jquery.maskedinput.min.js');
+		drupal_add_js($path . '/js/jquery.validate.min.js');
+		drupal_add_js($path . '/js/validate.js');
+	}
+}
+
+/**
+ * Implementing hook_theme().
+ */
+function identitytools_theme() {
+  $themes = array (
+    'tools_provision' => array (
+      'template' => 'tools_provision',
+      'variables' => array (
+        'vars' => array (
+          ''
+        )
+      )
+    ),
+  );
+  return $themes;
+}
+
