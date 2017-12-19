@@ -2,7 +2,7 @@
 <div class="assets-content">
   <div id="assets_wrapper">
 	<div class="assets-select">
-		<select class ="mobile-assets-select">
+		<select class ="mobile-assets-select mobile-assets-vijayan">
 		<?php foreach($variables['asset'] as $key_header=>$value_header) { ?>
 		    <?php
                 if(isset($_SESSION['legacy'])) {
